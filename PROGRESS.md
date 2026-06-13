@@ -1,85 +1,107 @@
-# Vangcur — Next.js Migration Progress
+# Vangcur Next.js Migration — Progress Log
 
-> এই ফাইলটা প্রতিটা Claude সেশনের শুরুতে পড়তে হবে এবং কাজ শেষে আপডেট করতে হবে।
-> ফরম্যাট: কী হয়েছে → কী চলছে → পরের ধাপ → জানা সমস্যা/সিদ্ধান্ত।
+## ✅ সম্পন্ন হয়েছে
 
-## প্রজেক্ট সারাংশ
+### Session 1 — Project Setup
+- Next.js project initialized (App Router, JS, Supabase)
+- `package.json`, `next.config.js`, `jsconfig.json` তৈরি
+- `globals.css` (legacy থেকে নেওয়া), `supabaseClient.js`, `supabaseServer.js` তৈরি
+- `layout.js` তৈরি (metadata, viewport সহ)
+- Placeholder `page.js` তৈরি
 
-- Source: পুরোনো vanilla JS সাইট (`legacy/index.html`, `legacy/admin.html` — রেফারেন্সের জন্য রাখা আছে, এডিট করা হবে না, কোডে import হবে না)
-- Target: Next.js (App Router, JavaScript, Supabase)
-- Supabase প্রজেক্ট: অপরিবর্তিত (same tables/RLS) — URL/anon key `.env.local.example`-এ আছে
+### Session 2 — Homepage Components (আজ সম্পন্ন ✅)
+- **`app/` folder structure** সঠিকভাবে সাজানো হয়েছে
+- **`lib/data.js`** — server-side data fetching (getProducts, getStoreSettings, getCustomerReviews, getProductById)
+- **`lib/supabaseServer.js`** + **`lib/supabaseClient.js`** — lib folder-এ রাখা হয়েছে
+- **`app/api/search/route.js`** — product search API endpoint
 
-## আর্কিটেকচার সিদ্ধান্ত (চূড়ান্ত — পরিবর্তন করার আগে আলোচনা করো)
+#### Components তৈরি:
+| Component | Type | কাজ |
+|-----------|------|-----|
+| `Navbar.js` | Client | Search (dropdown), cart/wish icon, mobile search bar |
+| `TrustStrip.js` | Server | 5টি trust badge |
+| `HeroDuoSlider.js` | Client | 2-card auto-sliding hero (swipe+dots+arrows) |
+| `Categories.js` | Client | Scrollable category carousel |
+| `ProductCard.js` | Client | Individual product card (rating, badge, discount%) |
+| `ProductGrid.js` | Client | Infinite scroll grid + category filtering |
+| `FAQ.js` | Client | Accordion FAQ |
+| `About.js` | Server | About section |
+| `CustomerGallery.js` | Client | Unboxing review gallery + like button |
+| `Footer.js` | Server | Full footer with social links |
+| `BackToTop.js` | Client | Scroll-to-top button (auto-shows after 400px) |
+| `FloatButtons.js` | Server | WhatsApp + Messenger float buttons |
 
-- Next.js **15.5.x** (App Router, JavaScript — TS নয়)
-  - *নোট: Next.js 16 stable হিসেবে আছে কিন্তু 16-এর breaking changes নিয়ে কম পরিচিত, তাই 15-এ শুরু — পরে চাইলে আপগ্রেড আলোচনা করা যাবে*
-- পাবলিক ডেটা (প্রোডাক্ট লিস্ট/ডিটেইল, রিভিউ) = Server Component + ISR (revalidate: 60s)
-- ইউজার-নির্ভর/অ্যাডমিন/রিয়েল-টাইম = Client Component + `lib/supabaseClient.js` (supabase-js)
-- সার্ভার সাইডে ডেটা আনতে হলে `lib/supabaseServer.js` ব্যবহার করো
-- CSS: legacy CSS (`<style>` ব্লক, ২৩৬৮ লাইন) সম্পূর্ণ `app/globals.css`-এ এক্সট্র্যাক্ট করা হয়েছে — font-family গুলো CSS variable (`var(--font-body)`, `var(--font-display)`) দিয়ে next/font-এর সাথে সংযুক্ত করা হয়েছে। **পেজ-স্পেসিফিক CSS পরে আলাদা module CSS-এ ভাগ করার কথা ভাবা হবে**, কিন্তু আপাতত সব globals.css-এই থাকবে যাতে কিছু miss না হয়।
-- Fonts: next/font/google (DM Sans, Hind Siliguri, Playfair Display) — self-hosted হয়ে যাবে বিল্ডের সময়, সাইট আরও দ্রুত হবে
+- **`app/page.js`** — Server Component, ISR 60s, সব data parallel fetch করে
+- **Build ✓ সফল** — `npm run build` pass করেছে
 
-## এখন পর্যন্ত যা সম্পন্ন হয়েছে
+## ⏳ বাকি আছে
 
-- [x] Next.js 15 প্রজেক্ট স্ট্রাকচার তৈরি (`package.json`, `next.config.js`, `jsconfig.json`, `.gitignore`)
-- [x] `app/globals.css` — legacy CSS সম্পূর্ণ এক্সট্র্যাক্ট ও font-family CSS variable-এ রূপান্তর
-- [x] `app/layout.js` — root layout, metadata (SEO/OG/Twitter), viewport, fonts সেটআপ (legacy `<head>` থেকে নেওয়া)
-- [x] `app/page.js` — placeholder হোমপেজ (পরের ধাপে আসল হোমপেজ বসবে)
-- [x] `lib/supabaseClient.js` — browser-side Supabase client
-- [x] `lib/supabaseServer.js` — server-side Supabase client helper
-- [x] `.env.local.example` — env var টেমপ্লেট (Supabase URL/anon key + Google Sheet URL সহ)
-- [x] `public/manifest.json` — basic PWA manifest placeholder
-- [x] `legacy/index.html`, `legacy/admin.html` — রেফারেন্স কোড কপি করা হয়েছে
-- [x] Build verification: sandbox-এ `npm run build` চালানো হয়েছে — **শুধু next/font Google Fonts fetch ছাড়া বাকি সব সফল কম্পাইল হয়েছে** (sandbox network Google Fonts ব্লক করে, কিন্তু Vercel-এ এটা সমস্যা হবে না)
+### পরের ধাপ (Priority অনুযায়ী):
 
-## এখন যা চলছে / আংশিক সম্পন্ন
+1. **Product Detail Modal / Page** — `/product/[id]` route তৈরি করা
+   - প্রোডাক্ট ছবি gallery, specs, reviews, অর্ডার/কার্ট button
+   
+2. **Cart + Order System** (Client-side, Supabase)
+   - CartDrawer component (slide-in)
+   - Order form (নাম, ফোন, ঠিকানা, bKash)
+   - Supabase-এ order save করা
 
-- (খালি — পরের সেশনে হোমপেজ থেকে শুরু হবে)
+3. **Auth System** — Login/Register modal (Supabase Auth)
 
-## পরের ধাপ (Next Steps) — অগ্রাধিকার ক্রমে
+4. **Category Filter Bridge** — Navbar-এ category click → ProductGrid filter
 
-1. **হোমপেজ (`/`)** — legacy `index.html`-এর body থেকে: হেডার/নেভ, হিরো সেকশন, ক্যাটাগরি কার্ড, প্রোডাক্ট গ্রিড, FAQ, Unboxing রিভিউ গ্যালারি, About Vangcur, Footer — সব আলাদা React component-এ ভাগ করে বানাতে হবে। প্রোডাক্ট লিস্ট/রিভিউ Server Component দিয়ে Supabase থেকে fetch (ISR 60s)।
-2. প্রোডাক্ট ডিটেইল পেজ (`/product/[id]`)
-3. SRP / সার্চ-ক্যাটাগরি পেজ
-4. কার্ট + চেকআউট (client-side state, localStorage/cookies বিবেচনা)
-5. অ্যাকাউন্ট / অর্ডার ট্র্যাকিং
-6. অ্যাডমিন প্যানেল (`/admin`) — `legacy/admin.html` থেকে
-7. PWA: real `manifest.json` icons + `public/sw.js` (deployed site-এর public ফোল্ডার থেকে কপি করতে হবে — এই দুটো ফাইল legacy uploads-এ ছিল না)
-8. SEO redirects (পুরোনো URL ফরম্যাট থেকে নতুন), sitemap, ফাইনাল QA
-9. ডোমেইন সুইচ
+5. **Toast notification** system (global)
 
-## ফাইল/ফোল্ডার ম্যাপ
+6. **Admin Panel** migration — `app/admin/` folder
+
+## 📋 টেস্ট করার চেকলিস্ট (deploy করার পর)
+
+- [ ] হোমপেজ লোড হয় কিনা (Supabase env vars সেট করার পর)
+- [ ] Products সঠিকভাবে দেখাচ্ছে কিনা
+- [ ] Hero slider কাজ করছে কিনা (swipe, auto-play)
+- [ ] Categories scroll কাজ করছে কিনা
+- [ ] Search box কাজ করছে কিনা
+- [ ] Mobile view ঠিক আছে কিনা
+
+## 🔧 Vercel-এ Environment Variables (একবার সেট করতে হবে)
+
+Vercel Dashboard → Project Settings → Environment Variables:
+```
+NEXT_PUBLIC_SUPABASE_URL = (তোমার Supabase project URL)
+NEXT_PUBLIC_SUPABASE_ANON_KEY = (তোমার Supabase anon key)
+```
+
+## 📁 ফাইল স্ট্রাকচার (বর্তমান)
 
 ```
 vangcur-next/
 ├── app/
-│   ├── layout.js        # root layout, fonts, metadata
-│   ├── page.js          # হোমপেজ (placeholder এখন)
-│   └── globals.css       # সম্পূর্ণ legacy CSS (২৩৬৮ লাইন), font-family → CSS vars
+│   ├── api/
+│   │   └── search/route.js
+│   ├── components/
+│   │   ├── About.js
+│   │   ├── BackToTop.js
+│   │   ├── Categories.js
+│   │   ├── CustomerGallery.js
+│   │   ├── FAQ.js
+│   │   ├── FloatButtons.js
+│   │   ├── Footer.js
+│   │   ├── HeroDuoSlider.js
+│   │   ├── Navbar.js
+│   │   ├── ProductCard.js
+│   │   ├── ProductGrid.js
+│   │   └── TrustStrip.js
+│   ├── globals.css
+│   ├── layout.js
+│   └── page.js
 ├── lib/
-│   ├── supabaseClient.js # browser-side
-│   └── supabaseServer.js # server-side (Server Components)
+│   ├── data.js
+│   ├── supabaseClient.js
+│   └── supabaseServer.js
 ├── legacy/
-│   ├── index.html        # রেফারেন্স — পুরোনো ফ্রন্টএন্ড
-│   └── admin.html        # রেফারেন্স — পুরোনো অ্যাডমিন প্যানেল
-├── public/
-│   └── manifest.json      # placeholder, replace with real icons later
-├── .env.local.example
+│   ├── index.html (reference only)
+│   └── admin.html (reference only)
 ├── next.config.js
-├── jsconfig.json
 ├── package.json
-└── README.md
+└── jsconfig.json
 ```
-
-## জানা সমস্যা / টেস্টিং নোট
-
-- `next/font/google` build sandbox-এ Google Fonts fetch করতে পারে না (network restriction) — **এটা Vercel-এ সমস্যা হবে না**, কিন্তু Vercel build log-এ যদি ভিন্ন কোনো font error আসে, তাহলে রিপোর্ট করো।
-- `public/manifest.json` এখন placeholder — আসল icons (deployed site-এর `/icons/...`) এবং `public/sw.js` (service worker) পরে deployed repo থেকে কপি করে আনতে হবে।
-- legacy `index.html`-এ invoice generation-এর জন্য আলাদা একটা `<style>`/HTML টেমপ্লেট আছে (লাইন ~৮৩৮৫ ও ~৯৪০৭) — এটা migrate করার সময় মাথায় রাখতে হবে (Order invoice feature)।
-
-## Environment Variables
-
-`.env.local.example`-এ values আছে (anon key, public-safe):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_GOOGLE_SHEET_URL`
