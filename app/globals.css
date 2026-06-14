@@ -2366,3 +2366,35 @@ nav.nav-intro-anim{animation:navIntroScaleIn .65s ease both;transform-origin:cen
   .nav-search>svg{transition:transform .6s cubic-bezier(.4,0,.2,1)}
   .nav-search .sp-text-d{position:absolute;left:40px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--gray);white-space:nowrap;overflow:hidden;pointer-events:none;background:var(--light);right:14px}
 }
+
+/* ===== MISSING FIXES ===== */
+/* Cat card active state */
+.cat-card.active{border-color:var(--dark)!important;background:var(--dark)!important;transform:translateY(-2px);box-shadow:var(--sh2)}
+.cat-card.active .cat-card-name{color:#fff}
+.cat-card.active .cat-card-icon-wrap{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2)}
+
+/* cat-cards-viewport horizontal scroll on mobile */
+.cat-cards-viewport{overflow-x:auto;overflow-y:visible;padding-top:6px;touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-cards-viewport::-webkit-scrollbar{display:none}
+
+/* prod-old (strikethrough price) */
+.prod-old{font-size:11px;color:var(--gray);text-decoration:line-through}
+
+/* discount-badge */
+.discount-badge{position:absolute;left:10px;padding:3px 9px;border-radius:50px;font-size:10px;font-weight:700;color:#fff;z-index:2}
+
+/* badge colors */
+.badge-hot{background:#E63946;color:#fff}
+.badge-new{background:#10B981;color:#fff}
+.badge-sold{background:#6B7280;color:#fff}
+
+/* empty-cat-msg */
+.empty-cat-msg{text-align:center;padding:60px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty-cat-msg .empty-icon{font-size:48px}
+.empty-cat-msg p{font-size:15px;color:var(--gray);font-weight:500}
+
+/* @keyframes spin (for loader) */
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Product card badge position fix */
+.prod-badge{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:50px;font-size:10px;font-weight:700;z-index:2}
