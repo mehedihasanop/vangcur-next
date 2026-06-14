@@ -23,8 +23,9 @@ export default function ProductCard({ product, onQuickOrder, onAddToCart, onOpen
   const sold = p.stock <= 0;
   const imgs = Array.isArray(p.imgs) ? p.imgs : (p.image_url ? [p.image_url] : ['📦']);
   const mainImg = imgs[0];
-  const discPct = p.old > p.price ? Math.round((1 - p.price / p.old) * 100) : 0;
-  const discBgColor = p.discountColor === 'green' ? '#16A34A' : '#FF6B00';
+  const oldPrice = p.old_price || p.old || 0;
+  const discPct = oldPrice > p.price ? Math.round((1 - p.price / oldPrice) * 100) : 0;
+  const discBgColor = (p.discount_color || p.discountColor) === 'green' ? '#16A34A' : '#FF6B00';
   const reviewCount = Math.floor(((Number(p.id) || 1) * 37 + (p.stock || 0) * 13) % 80 + 20);
 
   return (
@@ -93,8 +94,8 @@ export default function ProductCard({ product, onQuickOrder, onAddToCart, onOpen
         </div>
         <div className="prod-price-row">
           <span className="prod-price">৳{p.price?.toLocaleString()}</span>
-          {p.old > p.price && (
-            <span className="prod-old">৳{p.old?.toLocaleString()}</span>
+          {oldPrice > p.price && (
+            <span className="prod-old">৳{oldPrice?.toLocaleString()}</span>
           )}
         </div>
         <div className="prod-cta-row">

@@ -9,12 +9,12 @@ export default function HomeClient({ initialProducts }) {
   const { quickOrder, addToCart, openProduct } = useCart();
 
   function handleQuickOrder(productId) {
-    const product = initialProducts.find(p => p.id === productId);
+    const product = initialProducts.find(p => String(p.id) === String(productId));
     if (product) quickOrder(product);
   }
 
   function handleAddToCart(productId) {
-    const product = initialProducts.find(p => p.id === productId);
+    const product = initialProducts.find(p => String(p.id) === String(productId));
     if (product) addToCart(product);
   }
 
