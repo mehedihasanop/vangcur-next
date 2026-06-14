@@ -30,11 +30,11 @@ export default async function HomePage() {
 
   return (
     <>
-      <div className="toast" id="toast"></div>
       <Navbar />
       <HeroDuoSlider initialCards={heroCards} />
       <TrustStrip waNumber={waNumber} />
       <Categories initialCategories={categories} />
+      {/* HomeClient handles ProductGrid + ProductModal — gets all products */}
       <HomeClient initialProducts={products} />
       <FAQ faqs={faqs} />
       <About description={aboutDesc} />
