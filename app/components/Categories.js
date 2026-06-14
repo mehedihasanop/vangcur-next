@@ -24,12 +24,27 @@ const DEFAULT_CATS = [
   { id: 'btspeaker', name: 'BT Speaker' }, { id: 'projector', name: 'Projector' },
 ];
 
-export default function Categories({ initialCategories, activeCat = 'all', onCategoryClick }) {
+export default function Categories({ initialCategories, onCategoryClick }) {
+  const [activeCatState, setActiveCatState] = useState('all');
   const cats = (initialCategories && initialCategories.length > 0)
     ? initialCategories.filter(c => c.id !== 'all')
     : DEFAULT_CATS;
 
   const viewportRef = useRef(null);
+
+  function handleCatClick(catId) {
+    setActiveCatState(catId);
+    // Bridge to ProductGrid
+    if (typeof window !== 'undefined' && window._setProductCat) {
+      window._setProductCat(catId);
+    }
+    if (onCategoryClick) onCategoryClick(catId);
+    // Scroll to products
+    setTimeout(() => {
+      const el = document.getElementById('prodSec');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
 
   const scrollBy = useCallback((dir) => {
     if (!viewportRef.current) return;
@@ -42,17 +57,17 @@ export default function Categories({ initialCategories, activeCat = 'all', onCat
         <h2 className="sec-title">ক্যাটাগরি <span>সমূহ</span></h2>
       </div>
       <div className="cat-carousel-wrap">
-        <button className="cat-carousel-arrow prev" id="catPrevBtn" onClick={() => scrollBy(-1)}>&#8249;</button>
-        <div className="cat-cards-viewport" id="catViewport" ref={viewportRef}>
-          <div className="cat-cards" id="catCardsGrid">
+        <button className="cat-carousel-arrow prev" onClick={() => scrollBy(-1)}>&#8249;</button>
+        <div className="cat-cards-viewport" ref={viewportRef}>
+          <div className="cat-cards">
             {cats.map(cat => (
               <div
                 key={cat.id}
-                className={`cat-card${activeCat === cat.id ? ' active' : ''}`}
-                onClick={() => onCategoryClick && onCategoryClick(cat.id)}
+                className={`cat-card${activeCatState === cat.id ? ' active' : ''}`}
+                onClick={() => handleCatClick(cat.id)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && onCategoryClick && onCategoryClick(cat.id)}
+                onKeyDown={e => e.key === 'Enter' && handleCatClick(cat.id)}
               >
                 <div className="cat-card-icon-wrap">
                   {cat.icon && cat.icon.startsWith('<svg') ? (
@@ -71,7 +86,7 @@ export default function Categories({ initialCategories, activeCat = 'all', onCat
             ))}
           </div>
         </div>
-        <button className="cat-carousel-arrow next" id="catNextBtn" onClick={() => scrollBy(1)}>&#8250;</button>
+        <button className="cat-carousel-arrow next" onClick={() => scrollBy(1)}>&#8250;</button>
       </div>
     </div>
   );

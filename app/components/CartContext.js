@@ -75,14 +75,14 @@ export function CartProvider({ children }) {
     try { localStorage.removeItem('vc_cart'); } catch (e) {}
   }, []);
 
-  const quickOrder = useCallback((product) => {
+  const quickOrder = useCallback((product, qty = 1) => {
     if (!product || product.stock <= 0) { showToast('❌ স্টক শেষ!'); return; }
     setOrderItems([{
       id: product.id,
       name: product.name,
       price: product.price,
       img: Array.isArray(product.imgs) ? product.imgs[0] : (product.image_url || '📦'),
-      qty: 1,
+      qty: Math.max(1, qty),
     }]);
     setOrderOpen(true);
   }, [showToast]);

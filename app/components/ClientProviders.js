@@ -3,6 +3,12 @@
 import { CartProvider, useCart } from './CartContext';
 import CartDrawer from './CartDrawer';
 import OrderModal from './OrderModal';
+import ProductModal from './ProductModal';
+import { createContext, useContext, useState } from 'react';
+
+// ProductsContext — passes product list down to ProductModal
+const ProductsContext = createContext([]);
+export const useProducts = () => useContext(ProductsContext);
 
 function ToastUI() {
   const { toast } = useCart();
@@ -21,21 +27,24 @@ function ToastUI() {
   );
 }
 
-function Modals() {
+function Modals({ allProducts }) {
   return (
     <>
       <CartDrawer />
       <OrderModal />
+      <ProductModal allProducts={allProducts} />
       <ToastUI />
     </>
   );
 }
 
-export default function ClientProviders({ children }) {
+export default function ClientProviders({ children, initialProducts }) {
   return (
-    <CartProvider>
-      {children}
-      <Modals />
-    </CartProvider>
+    <ProductsContext.Provider value={initialProducts || []}>
+      <CartProvider>
+        {children}
+        <Modals allProducts={initialProducts || []} />
+      </CartProvider>
+    </ProductsContext.Provider>
   );
 }
