@@ -1,4 +1,5 @@
 import './globals.css';
+import ClientProviders from './components/ClientProviders';
 
 export const metadata = {
   title: 'Vangcur - ভাঙচুর | Your First Choice for Gadgets',
@@ -45,7 +46,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body><ClientProviders>{children}</ClientProviders></body>
     </html>
   );
 }

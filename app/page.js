@@ -1,10 +1,10 @@
 // app/page.js — হোমপেজ (Server Component + ISR)
 import { getProducts, getStoreSettings, getCustomerReviews } from '../lib/data';
 import Navbar from './components/Navbar';
+import HomeClient from './components/HomeClient';
 import TrustStrip from './components/TrustStrip';
 import HeroDuoSlider from './components/HeroDuoSlider';
 import Categories from './components/Categories';
-import ProductGrid from './components/ProductGrid';
 import FAQ from './components/FAQ';
 import About from './components/About';
 import CustomerGallery from './components/CustomerGallery';
@@ -35,7 +35,7 @@ export default async function HomePage() {
       <HeroDuoSlider initialCards={heroCards} />
       <TrustStrip waNumber={waNumber} />
       <Categories initialCategories={categories} />
-      <ProductGrid initialProducts={products} />
+      <HomeClient initialProducts={products} />
       <FAQ faqs={faqs} />
       <About description={aboutDesc} />
       <CustomerGallery initialReviews={reviews} />
