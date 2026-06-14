@@ -7,106 +7,88 @@
 - `package.json`, `next.config.js`, `jsconfig.json` তৈরি
 - `globals.css` (legacy থেকে নেওয়া), `supabaseClient.js`, `supabaseServer.js` তৈরি
 - `layout.js` তৈরি (metadata, viewport সহ)
-- Placeholder `page.js` তৈরি
 
 ### Session 2 — Homepage Components ✅
-- **`app/` folder structure** সঠিকভাবে সাজানো হয়েছে
-- **`lib/data.js`** — server-side data fetching
-- **`app/api/search/route.js`** — product search API endpoint
-- সব Homepage Components (Navbar, TrustStrip, HeroDuoSlider, Categories, ProductCard, ProductGrid, FAQ, About, CustomerGallery, Footer, BackToTop, FloatButtons)
+- সব Homepage Components তৈরি (Navbar, TrustStrip, HeroDuoSlider, Categories, ProductCard, ProductGrid, FAQ, About, CustomerGallery, Footer, BackToTop, FloatButtons)
+- `lib/data.js`, `app/api/search/route.js`
 
-### Session 3 — Cart + Order System ✅ (আজ সম্পন্ন)
-- **`CartContext.js`** — global cart state (useState + localStorage persistence)
-  - addToCart, updateQty, removeFromCart, clearCart
-  - quickOrder (single product direct order)
-  - checkoutCart (cart → order)
-  - showToast, openProduct hooks
-- **`CartDrawer.js`** — slide-up cart drawer
-  - product image/emoji, qty +/-, remove, total price
-  - "অর্ডার নিশ্চিত করুন" → OrderModal
-- **`OrderModal.js`** — 3-step order form
-  - Step 1: নাম, ফোন, জেলা, ঠিকানা, ইমেইল, shipping option
-  - Step 2: bKash payment (txn ID + last 4 digits)
-  - Step 3: Success screen with order number
-  - Supabase `orders` table-এ save করে (সব fields legacy-র মতো)
-  - Validation: phone regex, address length, email format
-- **`ClientProviders.js`** — CartProvider + CartDrawer + OrderModal + Toast একসাথে wrap করে
-- **`HomeClient.js`** — thin client wrapper যা ProductGrid-এ cart functions pass করে
-- **`layout.js`** — ClientProviders দিয়ে `<body>` wrap করা হয়েছে
-- **`Navbar.js`** — CartContext থেকে totalItems নিচ্ছে, cart icon click → CartDrawer খোলে
-- **Build ✓ সফল** — `npm run build` pass করেছে
+### Session 3 — Cart + Order System ✅
+- `CartContext.js`, `CartDrawer.js`, `OrderModal.js`, `ClientProviders.js`, `HomeClient.js`
+- Navbar cart icon, CartProvider, CartDrawer slide-up, OrderModal 3-step
 
-## ⏳ বাকি আছে
+### Session 4 — Bug Fixes (আজ) ✅
+**ঠিক করা হয়েছে:**
+1. **ProductModal** — `app/components/ProductModal.js` নতুন তৈরি
+   - Image gallery (multi-image thumbnail switching)
+   - Specs list (newline/semicolon দিয়ে ভাগ করা)
+   - Rating stars, description, delivery info
+   - Qty selector, quick order + add to cart buttons
+   - ESC key close, backdrop click close
+   - `window.__vc_products` থেকে product data নেয়
+   
+2. **Categories → ProductGrid bridge** ঠিক হয়েছে
+   - `Categories.js` — local `activeCatState` useState দিয়ে `.active` class কাজ করছে
+   - `window._setProductCat()` call করে ProductGrid filter করে
+   - Category click করলে auto-scroll to #prodSec
 
-### পরের ধাপ (Priority অনুযায়ী):
+3. **`ClientProviders.js`** — ProductModal যোগ হয়েছে
 
-1. **Product Detail Modal** — `/product/[id]` বা overlay modal
-   - প্রোডাক্ট ছবি gallery (swipeable), specs, reviews, অর্ডার/কার্ট button
+4. **`CartContext.js`** — `quickOrder(product, qty)` — qty parameter সাপোর্ট
 
-2. **Cart badge animation** — Navbar cart icon-এ `on` class toggle (CSS dot)
-   - `cart-dot` className-এ `.on` class লাগাতে হবে totalItems > 0 হলে
+5. **`data.js`** — `old_price`, `specs_short || specs` field সাপোর্ট যোগ
 
-3. **Toast refinement** — আরও polish (slide animation)
+6. **`globals.css`** — Missing styles যোগ:
+   - `.cat-card.active` — dark background, white text
+   - `.prod-old` — strikethrough price
+   - `.discount-badge` — পজিশন ফিক্স
+   - `.badge-*` colors
+   - `@keyframes spin` (loader)
+   - `cat-cards-viewport` — horizontal scroll
 
-4. **Auth System** — Login/Register modal (Supabase Auth)
+7. **Build ✓ সফল** — `npm run build` pass করেছে
 
-5. **Category Filter Bridge** — Navbar-এ category click → ProductGrid filter
+## ⏳ বাকি আছে (Priority অনুযায়ী)
+
+### পরবর্তী ধাপ:
+
+1. **Navbar category pills** — Desktop-এ Navbar নিচে cat-bar/cat-pills দিয়ে filter (এটা আগের সাইটে ছিল)
+   - এখন শুধু Categories section আছে, Navbar-এর নিচে cat pills নেই
+
+2. **Cart badge animation** — Navbar cart icon-এ totalItems > 0 হলে `.on` class
+
+3. **HeroDuoSlider category click** — card click করলে সেই category filter হবে
+
+4. **Product card specs display ভালো করা** — `specs_short` না থাকলে empty space না দেখানো
+
+5. **Auth System** — Login/Register modal
 
 6. **Admin Panel** migration — `app/admin/` folder
 
-## 📋 টেস্ট করার চেকলিস্ট (deploy করার পর)
+## 📋 এখন টেস্ট করার চেকলিস্ট
 
-- [ ] হোমপেজ লোড হয় কিনা
-- [ ] Products-এ "⚡ অর্ডার করুন" click → OrderModal খোলে কিনা
-- [ ] Products-এ "🛒" click → CartDrawer-এ যোগ হয় কিনা
-- [ ] CartDrawer-এ qty +/- কাজ করছে কিনা
-- [ ] CartDrawer → "অর্ডার নিশ্চিত করুন" → OrderModal Step 1 খোলে কিনা
-- [ ] OrderModal Step 1 validation কাজ করছে কিনা (ফাঁকা ফর্ম সাবমিট)
-- [ ] Shipping options জেলা অনুযায়ী পরিবর্তন হচ্ছে কিনা
-- [ ] OrderModal Step 2 → bKash info দিয়ে confirm → Step 3 success দেখায় কিনা
-- [ ] Navbar cart icon-এ count দেখাচ্ছে কিনা
+- [ ] হোমপেজ লোড হয়
+- [ ] Category card click → product filter হয় + scroll
+- [ ] Product card এ "অর্ডার করুন" → OrderModal খোলে
+- [ ] Product card এ "🛒" → CartDrawer-এ যোগ হয়
+- [ ] Product card/name click → ProductModal খোলে (ছবি, স্পেক, দাম দেখায়)
+- [ ] ProductModal এ qty +/- কাজ করে
+- [ ] ProductModal "এখনই অর্ডার করুন" → OrderModal খোলে
+- [ ] ProductModal "কার্টে যোগ করুন" → toast দেখায়
+- [ ] OrderModal ৩ step কাজ করছে
+- [ ] Navbar cart icon-এ count দেখাচ্ছে
 
-## 🔧 Vercel-এ Environment Variables
-
-Vercel Dashboard → Project Settings → Environment Variables:
+## 🔧 Vercel Environment Variables
 ```
-NEXT_PUBLIC_SUPABASE_URL = (তোমার Supabase project URL)
-NEXT_PUBLIC_SUPABASE_ANON_KEY = (তোমার Supabase anon key)
+NEXT_PUBLIC_SUPABASE_URL = ...
+NEXT_PUBLIC_SUPABASE_ANON_KEY = ...
 ```
 
-## 📁 ফাইল স্ট্রাকচার (বর্তমান)
-
-```
-vangcur-next/
-├── app/
-│   ├── api/
-│   │   └── search/route.js
-│   ├── components/
-│   │   ├── About.js
-│   │   ├── BackToTop.js
-│   │   ├── CartContext.js        ← NEW (Session 3)
-│   │   ├── CartDrawer.js         ← NEW (Session 3)
-│   │   ├── Categories.js
-│   │   ├── ClientProviders.js    ← NEW (Session 3)
-│   │   ├── CustomerGallery.js
-│   │   ├── FAQ.js
-│   │   ├── FloatButtons.js
-│   │   ├── Footer.js
-│   │   ├── HeroDuoSlider.js
-│   │   ├── HomeClient.js         ← NEW (Session 3)
-│   │   ├── Navbar.js             ← Updated (CartContext)
-│   │   ├── OrderModal.js         ← NEW (Session 3)
-│   │   ├── ProductCard.js
-│   │   ├── ProductGrid.js
-│   │   └── TrustStrip.js
-│   ├── globals.css
-│   ├── layout.js                 ← Updated (ClientProviders)
-│   └── page.js                   ← Updated (HomeClient)
-├── lib/
-│   ├── data.js
-│   ├── supabaseClient.js
-│   └── supabaseServer.js
-├── next.config.js
-├── package.json
-└── jsconfig.json
-```
+## 📁 নতুন/পরিবর্তিত ফাইল (Session 4)
+- `app/components/ProductModal.js` ← NEW
+- `app/components/ClientProviders.js` ← Updated (ProductModal added)
+- `app/components/HomeClient.js` ← Updated (window.__vc_products)
+- `app/components/Categories.js` ← Updated (active state + bridge)
+- `app/components/CartContext.js` ← Updated (quickOrder qty)
+- `app/globals.css` ← Updated (missing styles)
+- `app/page.js` ← Updated (toast div removed)
+- `lib/data.js` ← Updated (old_price, specs fields)
