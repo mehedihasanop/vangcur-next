@@ -12,7 +12,7 @@ import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
 import FloatButtons from './components/FloatButtons';
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [products, settings, reviews] = await Promise.all([
