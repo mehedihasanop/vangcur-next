@@ -3,8 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useCart } from './CartContext';
 
-export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick }) {
+export default function Navbar({ wishCount = 0, onWishClick, onLoginClick, onTrackClick }) {
+  const { totalItems, setCartOpen } = useCart();
+  const cartCount = totalItems;
+  const onCartClick = () => setCartOpen(true);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
