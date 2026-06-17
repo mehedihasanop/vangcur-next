@@ -16,71 +16,37 @@ const CARD_DEFAULTS = [
 ];
 
 export default function HeroDuoSlider({ initialCards, onCategoryClick }) {
-  const cards = initialCards?.length ? initialCards : CARD_DEFAULTS;
+  const cards = (initialCards?.length ? initialCards : CARD_DEFAULTS);
   const total = cards.length;
 
-  // infinite clone: head + real + tail
-  const allCards = [...cards, ...cards, ...cards];
-  const [idx, setIdx] = useState(total); // start at real section
-  const [animated, setAnimated] = useState(false);
+  const [page, setPage] = useState(0); // 0-based page index
+  const [isDesktop, setIsDesktop] = useState(false);
   const trackRef = useRef(null);
   const wrapRef = useRef(null);
   const autoRef = useRef(null);
-  const jumpRef = useRef(false);
   const touchStartX = useRef(null);
 
-  const getPerPage = useCallback(() => {
-    if (typeof window === 'undefined') return 2;
-    return window.innerWidth >= 769 ? 6 : 2;
+  const perPage = isDesktop ? 6 : 2;
+  const totalPages = Math.ceil(total / perPage);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
-  const setPosition = useCallback((animate) => {
-    const track = trackRef.current;
-    const wrap = wrapRef.current;
-    if (!track || !wrap) return;
-    const perPage = getPerPage();
-    const gap = 12;
-    const wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth;
-    const cardW = (wrapW - gap * (perPage - 1)) / perPage;
-    const offset = -(idx * (cardW + gap));
-    track.style.transition = animate ? 'transform .42s cubic-bezier(.4,0,.2,1)' : 'none';
-    track.style.transform = `translateX(${offset}px)`;
-  }, [idx, getPerPage]);
+  const goTo = useCallback((p) => {
+    const next = ((p % totalPages) + totalPages) % totalPages;
+    setPage(next);
+  }, [totalPages]);
 
   const startAuto = useCallback(() => {
     clearInterval(autoRef.current);
     autoRef.current = setInterval(() => {
-      setIdx(prev => prev + getPerPage());
-      setAnimated(true);
+      setPage(prev => (prev + 1) % totalPages);
     }, 3800);
-  }, [getPerPage]);
-
-  useEffect(() => {
-    setPosition(animated);
-  }, [idx, animated, setPosition]);
-
-  // handle infinite loop jump after transition
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    const onEnd = () => {
-      if (jumpRef.current) return;
-      const perPage = getPerPage();
-      if (idx >= total * 2) {
-        jumpRef.current = true;
-        setIdx(i => i - total);
-        setAnimated(false);
-        jumpRef.current = false;
-      } else if (idx < total) {
-        jumpRef.current = true;
-        setIdx(i => i + total);
-        setAnimated(false);
-        jumpRef.current = false;
-      }
-    };
-    track.addEventListener('transitionend', onEnd);
-    return () => track.removeEventListener('transitionend', onEnd);
-  }, [idx, total, getPerPage]);
+  }, [totalPages]);
 
   useEffect(() => {
     startAuto();
@@ -88,27 +54,25 @@ export default function HeroDuoSlider({ initialCards, onCategoryClick }) {
   }, [startAuto]);
 
   const slide = (dir) => {
-    setIdx(prev => prev + dir * getPerPage());
-    setAnimated(true);
+    goTo(page + dir);
     clearInterval(autoRef.current);
-    setTimeout(() => startAuto(), 2000);
+    setTimeout(startAuto, 2000);
   };
 
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    clearInterval(autoRef.current);
-  };
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {
     if (touchStartX.current === null) return;
     const dx = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(dx) > 36) slide(dx > 0 ? 1 : -1);
     touchStartX.current = null;
-    setTimeout(() => startAuto(), 2000);
   };
 
-  // dot index (which real card is first visible)
-  const dotIdx = ((idx - total) % total + total) % total;
-  const dotCount = Math.ceil(total / getPerPage());
+  // Which cards to show on current page
+  const startIdx = page * perPage;
+  const visibleCards = [];
+  for (let i = 0; i < perPage; i++) {
+    visibleCards.push(cards[(startIdx + i) % total]);
+  }
 
   return (
     <div className="cath-wrap" id="cathWrap">
@@ -119,20 +83,25 @@ export default function HeroDuoSlider({ initialCards, onCategoryClick }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="cath-duo-track" id="cathDuoTrack" ref={trackRef}>
-          {allCards.map((card, i) => (
+        <div
+          className="cath-duo-track"
+          id="cathDuoTrack"
+          ref={trackRef}
+          style={{ transform: 'none', transition: 'none' }}
+        >
+          {visibleCards.map((card, i) => (
             <div
-              key={i}
-              className="cath-card"
+              key={`${page}-${i}`}
+              className="cath-card vc-card-in"
               style={{ background: card.bg || '#111' }}
-              onClick={() => onCategoryClick && onCategoryClick(card.catId)}
+              onClick={() => onCategoryClick?.(card.catId)}
             >
               {card.img ? (
                 <img
                   className="cath-bg-img"
                   src={card.img}
                   alt={card.label || ''}
-                  loading={i < 4 ? 'eager' : 'lazy'}
+                  loading={i === 0 ? 'eager' : 'lazy'}
                   draggable={false}
                 />
               ) : (
@@ -151,18 +120,17 @@ export default function HeroDuoSlider({ initialCards, onCategoryClick }) {
 
       {/* Dots */}
       <div className="cath-duo-dots" id="cathDuoDots" style={{ display: 'flex' }}>
-        {Array.from({ length: total }).map((_, i) => (
+        {Array.from({ length: totalPages }).map((_, i) => (
           <button
             key={i}
-            className={`cath-duo-dot${i === dotIdx ? ' active' : ''}`}
-            onClick={() => { setIdx(total + i); setAnimated(true); }}
+            className={`cath-duo-dot${i === page ? ' active' : ''}`}
+            onClick={() => { goTo(i); clearInterval(autoRef.current); setTimeout(startAuto, 2000); }}
           />
         ))}
       </div>
 
-      {/* Arrows */}
-      <button className="cath-arrow-btn cath-prev" id="cathDuoPrev" onClick={() => slide(-1)}>&#8249;</button>
-      <button className="cath-arrow-btn cath-next" id="cathDuoNext" onClick={() => slide(1)}>&#8250;</button>
+      <button className="cath-arrow-btn cath-prev" onClick={() => slide(-1)}>&#8249;</button>
+      <button className="cath-arrow-btn cath-next" onClick={() => slide(1)}>&#8250;</button>
     </div>
   );
 }
