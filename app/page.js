@@ -1,4 +1,10 @@
-// Homepage — পরের ধাপে section গুলো এখানে যোগ হবে
+import Navbar from './components/layout/Navbar';
+
 export default function HomePage() {
-  return <main></main>;
+  return (
+    <>
+      <div className="toast" id="toast"></div>
+      <Navbar />
+    </>
+  );
 }
