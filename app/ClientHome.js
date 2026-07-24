@@ -10,9 +10,9 @@ import ProductGrid from './components/home/ProductGrid';
 import FAQ from './components/home/FAQ';
 import About from './components/home/About';
 import CustomerGallery from './components/home/CustomerGallery';
+import Footer from './components/layout/Footer';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import Footer from './components/layout/Footer';
 // import BackToTop from './components/layout/BackToTop';
 // import FloatButtons from './components/layout/FloatButtons';
 // import SearchPage from './components/search/SearchPage';
@@ -48,7 +48,7 @@ export default function ClientHome() {
       <FAQ />
       <About />
       <CustomerGallery />
-      {/* Footer এখানে আসবে */}
+      <Footer />
       {/* BackToTop এখানে আসবে */}
       {/* FloatButtons এখানে আসবে */}
       {/* Overlays এখানে আসবে */}
