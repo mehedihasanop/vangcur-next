@@ -6,8 +6,9 @@ import TrustStrip from './components/home/TrustStrip';
 import Categories from './components/home/Categories';
 import CatBar from './components/home/CatBar';
 
+import ProductGrid from './components/home/ProductGrid';
+
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import ProductGrid from './components/home/ProductGrid';
 // import FAQ from './components/home/FAQ';
 // import About from './components/home/About';
 // import CustomerGallery from './components/home/CustomerGallery';
@@ -43,7 +44,7 @@ export default function ClientHome() {
       <TrustStrip />
       <CatBar />
       <Categories />
-      {/* ProductGrid এখানে আসবে */}
+      <ProductGrid />
       {/* FAQ এখানে আসবে */}
       {/* About এখানে আসবে */}
       {/* CustomerGallery এখানে আসবে */}
