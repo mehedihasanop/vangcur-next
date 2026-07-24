@@ -3,9 +3,10 @@
 import Navbar from './components/layout/Navbar';
 import HeroSlider from './components/home/HeroSlider';
 import TrustStrip from './components/home/TrustStrip';
+import Categories from './components/home/Categories';
+import CatBar from './components/home/CatBar';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import Categories from './components/home/Categories';
 // import ProductGrid from './components/home/ProductGrid';
 // import FAQ from './components/home/FAQ';
 // import About from './components/home/About';
@@ -40,7 +41,8 @@ export default function ClientHome() {
       <Navbar />
       <HeroSlider />
       <TrustStrip />
-      {/* Categories এখানে আসবে */}
+      <CatBar />
+      <Categories />
       {/* ProductGrid এখানে আসবে */}
       {/* FAQ এখানে আসবে */}
       {/* About এখানে আসবে */}
