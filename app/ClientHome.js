@@ -1,90 +1,54 @@
 'use client';
-import dynamic from 'next/dynamic';
 
-// Layout
 import Navbar from './components/layout/Navbar';
+import HeroSlider from './components/home/HeroSlider';
+import TrustStrip from './components/home/TrustStrip';
 
-// Home sections — একটা একটা করে তৈরি হবে, কিন্তু import এখনই দেওয়া আছে
-const HeroSlider = dynamic(() => import('./components/home/HeroSlider'), { ssr: false });
-const TrustStrip = dynamic(() => import('./components/home/TrustStrip'), { ssr: false });
-const Categories = dynamic(() => import('./components/home/Categories'), { ssr: false });
-const ProductGrid = dynamic(() => import('./components/home/ProductGrid'), { ssr: false });
-const FAQ = dynamic(() => import('./components/home/FAQ'), { ssr: false });
-const About = dynamic(() => import('./components/home/About'), { ssr: false });
-const CustomerGallery = dynamic(() => import('./components/home/CustomerGallery'), { ssr: false });
-const Footer = dynamic(() => import('./components/layout/Footer'), { ssr: false });
-const BackToTop = dynamic(() => import('./components/layout/BackToTop'), { ssr: false });
-const FloatButtons = dynamic(() => import('./components/layout/FloatButtons'), { ssr: false });
-
-// Overlays
-const SearchPage = dynamic(() => import('./components/search/SearchPage'), { ssr: false });
-const WishlistDrawer = dynamic(() => import('./components/cart/WishlistDrawer'), { ssr: false });
-const ProductDetail = dynamic(() => import('./components/product/ProductDetail'), { ssr: false });
-const CartDrawer = dynamic(() => import('./components/cart/CartDrawer'), { ssr: false });
-const LoginModal = dynamic(() => import('./components/auth/LoginModal'), { ssr: false });
-const AccountPage = dynamic(() => import('./components/auth/AccountPage'), { ssr: false });
-
-// Order
-const OrderForm = dynamic(() => import('./components/order/OrderForm'), { ssr: false });
-const PreConfirmLogin = dynamic(() => import('./components/order/PreConfirmLogin'), { ssr: false });
-const WaitingPage = dynamic(() => import('./components/order/WaitingPage'), { ssr: false });
-const ConfirmPopup = dynamic(() => import('./components/order/ConfirmPopup'), { ssr: false });
-const PostOrderInfo = dynamic(() => import('./components/order/PostOrderInfo'), { ssr: false });
-const OrderTracking = dynamic(() => import('./components/order/OrderTracking'), { ssr: false });
-
-// Modals
-const PolicyModal = dynamic(() => import('./components/modals/PolicyModal'), { ssr: false });
-const WarrantyModal = dynamic(() => import('./components/modals/WarrantyModal'), { ssr: false });
-const OfferPopup = dynamic(() => import('./components/modals/OfferPopup'), { ssr: false });
-const StockNotifyModal = dynamic(() => import('./components/modals/StockNotifyModal'), { ssr: false });
-const MembershipModal = dynamic(() => import('./components/modals/MembershipModal'), { ssr: false });
-const RecoveryToast = dynamic(() => import('./components/modals/RecoveryToast'), { ssr: false });
-const BackInStockToast = dynamic(() => import('./components/modals/BackInStockToast'), { ssr: false });
+// পরের components তৈরি হলে এখানে import যোগ হবে:
+// import Categories from './components/home/Categories';
+// import ProductGrid from './components/home/ProductGrid';
+// import FAQ from './components/home/FAQ';
+// import About from './components/home/About';
+// import CustomerGallery from './components/home/CustomerGallery';
+// import Footer from './components/layout/Footer';
+// import BackToTop from './components/layout/BackToTop';
+// import FloatButtons from './components/layout/FloatButtons';
+// import SearchPage from './components/search/SearchPage';
+// import WishlistDrawer from './components/cart/WishlistDrawer';
+// import ProductDetail from './components/product/ProductDetail';
+// import CartDrawer from './components/cart/CartDrawer';
+// import LoginModal from './components/auth/LoginModal';
+// import AccountPage from './components/auth/AccountPage';
+// import OrderForm from './components/order/OrderForm';
+// import PreConfirmLogin from './components/order/PreConfirmLogin';
+// import WaitingPage from './components/order/WaitingPage';
+// import ConfirmPopup from './components/order/ConfirmPopup';
+// import PostOrderInfo from './components/order/PostOrderInfo';
+// import OrderTracking from './components/order/OrderTracking';
+// import PolicyModal from './components/modals/PolicyModal';
+// import WarrantyModal from './components/modals/WarrantyModal';
+// import OfferPopup from './components/modals/OfferPopup';
+// import StockNotifyModal from './components/modals/StockNotifyModal';
+// import MembershipModal from './components/modals/MembershipModal';
+// import RecoveryToast from './components/modals/RecoveryToast';
+// import BackInStockToast from './components/modals/BackInStockToast';
 
 export default function ClientHome() {
   return (
     <>
       <div className="toast" id="toast"></div>
-
-      {/* Layout */}
       <Navbar />
-
-      {/* Home */}
       <HeroSlider />
       <TrustStrip />
-      <Categories />
-      <ProductGrid />
-      <FAQ />
-      <About />
-      <CustomerGallery />
-      <Footer />
-      <BackToTop />
-      <FloatButtons />
-
-      {/* Overlays */}
-      <SearchPage />
-      <WishlistDrawer />
-      <ProductDetail />
-      <CartDrawer />
-      <LoginModal />
-      <AccountPage />
-
-      {/* Order */}
-      <OrderForm />
-      <PreConfirmLogin />
-      <WaitingPage />
-      <ConfirmPopup />
-      <PostOrderInfo />
-      <OrderTracking />
-
-      {/* Modals */}
-      <PolicyModal />
-      <WarrantyModal />
-      <OfferPopup />
-      <StockNotifyModal />
-      <MembershipModal />
-      <RecoveryToast />
-      <BackInStockToast />
+      {/* Categories এখানে আসবে */}
+      {/* ProductGrid এখানে আসবে */}
+      {/* FAQ এখানে আসবে */}
+      {/* About এখানে আসবে */}
+      {/* CustomerGallery এখানে আসবে */}
+      {/* Footer এখানে আসবে */}
+      {/* BackToTop এখানে আসবে */}
+      {/* FloatButtons এখানে আসবে */}
+      {/* Overlays এখানে আসবে */}
     </>
   );
-        }
+}
