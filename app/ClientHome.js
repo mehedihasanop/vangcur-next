@@ -8,9 +8,9 @@ import CatBar from './components/home/CatBar';
 
 import ProductGrid from './components/home/ProductGrid';
 import FAQ from './components/home/FAQ';
+import About from './components/home/About';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import About from './components/home/About';
 // import CustomerGallery from './components/home/CustomerGallery';
 // import Footer from './components/layout/Footer';
 // import BackToTop from './components/layout/BackToTop';
@@ -46,7 +46,7 @@ export default function ClientHome() {
       <Categories />
       <ProductGrid />
       <FAQ />
-      {/* About এখানে আসবে */}
+      <About />
       {/* CustomerGallery এখানে আসবে */}
       {/* Footer এখানে আসবে */}
       {/* BackToTop এখানে আসবে */}
