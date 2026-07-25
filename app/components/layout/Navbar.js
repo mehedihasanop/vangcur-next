@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { SRP_TRIGGER_EVENT } from '@/lib/uiEvents';
+
+// Note: handleSearchKey previously called router.push('/search?q=...') and the
+// dropdown fetched from '/api/search' — neither route exists in this repo (no
+// app/search or app/api/search), and ClientHome.js/lib/uiEvents.js/BackToTop.js/
+// FloatButtons.js were all already built expecting search to open as the
+// 17-search-result-page.html overlay (SearchPage.js), not a routed page. Fixed
+// Enter-key submission below to open that overlay via SRP_TRIGGER_EVENT instead.
+// The instant dropdown's '/api/search' fetch is a separate pre-existing issue
+// (that endpoint still doesn't exist) — left as-is, out of scope for task 17.
 
 export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -10,7 +19,6 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
-  const router = useRouter();
 
   const handleSearchInput = useCallback(async (value) => {
     setSearchQuery(value);
@@ -34,10 +42,15 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     }, 280);
   }, []);
 
+  // Legacy: viewAllSearch(q) -> openSRP(q) (32-javascript-all.js ~2978-2990)
   const handleSearchKey = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const q = searchQuery.trim();
       setShowDropdown(false);
+      setMobileSearchOpen(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      window.dispatchEvent(new CustomEvent(SRP_TRIGGER_EVENT, { detail: { query: q } }));
     }
   };
 
