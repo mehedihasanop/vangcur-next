@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  getWishlist, saveWishlist, WISHLIST_EVENT,
-  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT,
+  getWishlist, saveWishlist, WISHLIST_EVENT, productHref,
+  QUICK_ORDER_EVENT, QUICK_CART_EVENT,
 } from '@/lib/productData';
 import { lockBody, unlockBody } from '@/lib/bodyScrollLock';
 import { showToast } from '@/lib/toast';
@@ -24,9 +25,10 @@ import { showToast } from '@/lib/toast';
 //   called renderProds(PRODS) to un-heart the product grid; ProductCard.js/
 //   SRPProductCard.js now listen for WISHLIST_EVENT themselves to do the same thing,
 //   so this component doesn't need to reach into them directly.
-// - openPPFromWishlist(id) -> dispatches PRODUCT_OPEN_EVENT, same event ProductCard's
-//   openProduct() uses. 19-product-full-page.html (ProductDetail.js) isn't built yet
-//   (Priority 2, ⏳), so — like ProductCard — this fires into the void until then.
+// - openPPFromWishlist(id) -> router.push(productHref(item)). 19-product-full-page.html
+//   is now a real route (app/product/[slug]/, owner's decision), so this just navigates
+//   there instead of dispatching into an overlay — same change made in ProductCard.js
+//   and SRPProductCard.js.
 // - "🛒 কার্টে যোগ" -> dispatches QUICK_CART_EVENT (same event ProductCard/SRPProductCard
 //   use for their cart-icon button). 20-cart-sidebar.html isn't built yet either.
 // - "⚡ অর্ডার করুন" -> closes the drawer + dispatches QUICK_ORDER_EVENT with {id}. Legacy
@@ -59,6 +61,7 @@ function WishImg({ emoji }) {
 }
 
 export default function WishlistDrawer({ isOpen, onClose }) {
+  const router = useRouter();
   const [items, setItems] = useState([]);
 
   // Load on mount + stay in sync with adds/removes from ProductCard, SRPProductCard, etc.
@@ -75,9 +78,12 @@ export default function WishlistDrawer({ isOpen, onClose }) {
     else unlockBody();
   }, [isOpen]);
 
-  const openProduct = (id) => {
+  // Legacy: openPPFromWishlist(id) -> PRODUCT_OPEN_EVENT dispatch into the pp-overlay.
+  // Now that 19-product-full-page.html is a real route (owner's decision), navigate
+  // straight there. `item` already carries {id, name}, enough for productHref()'s slug.
+  const openProduct = (item) => {
     onClose();
-    window.dispatchEvent(new CustomEvent(PRODUCT_OPEN_EVENT, { detail: { id } }));
+    router.push(productHref(item));
   };
 
   const addToCart = (id) => {
@@ -113,7 +119,7 @@ export default function WishlistDrawer({ isOpen, onClose }) {
               <div className="wl-item" id={`wli_${item.id}`} key={item.id}>
                 <div
                   className="wl-img"
-                  onClick={() => openProduct(item.id)}
+                  onClick={() => openProduct(item)}
                   style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <WishImg emoji={item.emoji} />
@@ -121,7 +127,7 @@ export default function WishlistDrawer({ isOpen, onClose }) {
                 <div className="wl-info" style={{ flex: 1, minWidth: 0 }}>
                   <div
                     className="wl-name"
-                    onClick={() => openProduct(item.id)}
+                    onClick={() => openProduct(item)}
                     style={{ cursor: 'pointer' }}
                     title="প্রোডাক্ট দেখুন"
                   >
@@ -155,4 +161,4 @@ export default function WishlistDrawer({ isOpen, onClose }) {
       </div>
     </div>
   );
-}
+                                    }
