@@ -35,11 +35,12 @@ import { showToast } from '@/lib/toast';
 //   built a one-off orderItems=[{...p, qty:1}] array and called openOrder(false) directly;
 //   23-order-overlay.html (OrderForm.js) isn't built yet, so it can build that array
 //   itself from the id when it adds a listener later.
-// - syncWishlistFromSupabase/saveWishlistToSupabase (lines ~1162-1188) and the `wishlists`
-//   realtime subscription (lines ~560-567) are the cross-device-sync half — deliberately
-//   NOT converted here, for the same reason lib/productData.js's toggleWish() skips them:
-//   they need currentUser from the login/account component (21/22, Priority 2, not built
-//   yet). Wiring that in later only touches saveWishlist() in lib/productData.js.
+// - syncWishlistFromSupabase/saveWishlistToSupabase (lines ~1162-1188) are the cross-device-sync
+//   half — not converted here. Now that 21-login-modal.html is built, that sync lives in
+//   app/components/auth/LoginModal.js (listens for WISHLIST_EVENT + calls saveWishlistToSupabase
+//   whenever a user is signed in), not here — this drawer doesn't need to know about auth at all.
+//   The `wishlists` realtime subscription (lines ~560-567, cross-tab/device live updates while
+//   this drawer is open) still isn't converted — genuinely deferred, not just relocated.
 // Markup/behavior source: 18-wishlist-overlay.html section extraction
 
 function WishImg({ emoji }) {
