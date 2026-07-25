@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  isWishlisted, toggleWish,
-  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT, WISHLIST_EVENT,
+  isWishlisted, toggleWish, productHref,
+  QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT, WISHLIST_EVENT,
 } from '@/lib/productData';
 
 // Converted from 32-javascript-all.js:
@@ -77,6 +78,7 @@ function ProdImg({ imgVal, name, lazy }) {
 }
 
 export default function ProductCard({ prod: p, isFirst }) {
+  const router = useRouter();
   const [wished, setWished] = useState(() => isWishlisted(p.id));
   const wishBtnRef = useRef(null);
 
@@ -96,8 +98,10 @@ export default function ProductCard({ prod: p, isFirst }) {
   // Legacy: rating-derived fake review count — Math.floor((id*37 + stock*13) % 80 + 20)
   const reviewCount = Math.floor((Number(p.id) || 1) * 37 + p.stock * 13) % 80 + 20;
 
+  // Legacy: openPP(id) -> PRODUCT_OPEN_EVENT dispatch into the pp-overlay. Now that
+  // 19-product-full-page.html is a real route (owner's decision), this just navigates.
   const openProduct = () => {
-    window.dispatchEvent(new CustomEvent(PRODUCT_OPEN_EVENT, { detail: { id: p.id } }));
+    router.push(productHref(p));
   };
 
   const handleWish = (e) => {
