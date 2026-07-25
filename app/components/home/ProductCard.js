@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   isWishlisted, toggleWish,
-  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT,
+  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT, WISHLIST_EVENT,
 } from '@/lib/productData';
 
 // Converted from 32-javascript-all.js:
@@ -79,6 +79,14 @@ function ProdImg({ imgVal, name, lazy }) {
 export default function ProductCard({ prod: p, isFirst }) {
   const [wished, setWished] = useState(() => isWishlisted(p.id));
   const wishBtnRef = useRef(null);
+
+  // Legacy: renderProds(PRODS) was called after removeFromWishlistInModal() to
+  // un-heart cards on the grid too — here each card just resyncs itself instead.
+  useEffect(() => {
+    const handler = () => setWished(isWishlisted(p.id));
+    window.addEventListener(WISHLIST_EVENT, handler);
+    return () => window.removeEventListener(WISHLIST_EVENT, handler);
+  }, [p.id]);
 
   const sold = p.stock <= 0;
   const badgeClass = p.badge ? `badge-${p.badge.toLowerCase()}` : '';
@@ -190,4 +198,4 @@ export default function ProductCard({ prod: p, isFirst }) {
       </div>
     </div>
   );
-}
+        }
