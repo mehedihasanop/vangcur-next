@@ -6,21 +6,24 @@ import {
   DEFAULT_WA_LINK, computeWaLink, computeMsgLink,
   fetchContactSettings, subscribeContactSettings,
 } from '@/lib/floatButtonsData';
-import {
-  SRP_OPEN_EVENT, SRP_CLOSE_EVENT, PP_OPEN_EVENT, PP_CLOSE_EVENT,
-} from '@/lib/uiEvents';
+import { PP_OPEN_EVENT, PP_CLOSE_EVENT } from '@/lib/uiEvents';
 
 // Converted from 32-javascript-all.js:
 // - Dynamic WhatsApp/Messenger link update from vc_contact admin settings
 //   (lines ~150-165)
-// - Hide/restore on Product Page open/close (lines ~758-760, ~790-792) and on
-//   Search Result Page open/close (lines ~600-605, ~631-633) — 19-product-full-
-//   page.html and 17-search-result-page.html aren't converted yet (Priority 2),
-//   so this listens for the shared PP_OPEN/PP_CLOSE/SRP_OPEN/SRP_CLOSE custom
-//   events (see lib/uiEvents.js) instead of the legacy code reaching in via
-//   querySelector('.float-btns'). The future ProductDetail/SearchPage components
-//   should dispatch those events on open/close.
+// - Hide/restore on Product Page open/close (lines ~758-760, ~790-792) —
+//   19-product-full-page.html isn't converted yet (Priority 2), so this
+//   listens for the shared PP_OPEN_EVENT/PP_CLOSE_EVENT custom events (see
+//   lib/uiEvents.js) instead of the legacy code reaching in via
+//   querySelector('.float-btns'). The future ProductDetail component should
+//   dispatch those on open/close.
 // Markup source: 16-float-buttons.html
+//
+// Note: this component only ever mounts inside ClientHome.js (the home page),
+// so it never renders on /srp — that route has its own inline WA/Messenger
+// buttons instead (see app/srp/SearchPageClient.js). It used to also hide on
+// an SRP_OPEN_EVENT/SRP_CLOSE_EVENT pair from when search was going to be a
+// same-page overlay; that's gone now that /srp is a real route.
 //
 // Note: .float-btns / .f-btn / .fb-wa / .fb-msg have no opacity:0 / vc-visible
 // reveal-gating in globals.css (verified via grep), so no scroll-reveal logic is
@@ -48,16 +51,12 @@ export default function FloatButtons() {
 
     const hide = () => setHidden(true);
     const show = () => setHidden(false);
-    window.addEventListener(SRP_OPEN_EVENT, hide);
-    window.addEventListener(SRP_CLOSE_EVENT, show);
     window.addEventListener(PP_OPEN_EVENT, hide);
     window.addEventListener(PP_CLOSE_EVENT, show);
 
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
-      window.removeEventListener(SRP_OPEN_EVENT, hide);
-      window.removeEventListener(SRP_CLOSE_EVENT, show);
       window.removeEventListener(PP_OPEN_EVENT, hide);
       window.removeEventListener(PP_CLOSE_EVENT, show);
     };
