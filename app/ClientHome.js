@@ -15,11 +15,12 @@ import Footer from './components/layout/Footer';
 import BackToTop from './components/layout/BackToTop';
 import FloatButtons from './components/layout/FloatButtons';
 import WishlistDrawer from './components/cart/WishlistDrawer';
+import CartSidebar from './components/cart/CartSidebar';
 import { getWishlist, WISHLIST_EVENT } from '@/lib/productData';
+import { getCart, cartCount as sumCartCount, CART_EVENT } from '@/lib/cartData';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
 // import ProductDetail from './components/product/ProductDetail';
-// import CartDrawer from './components/cart/CartDrawer';
 // import LoginModal from './components/auth/LoginModal';
 // import AccountPage from './components/auth/AccountPage';
 // import OrderForm from './components/order/OrderForm';
@@ -39,6 +40,8 @@ import { getWishlist, WISHLIST_EVENT } from '@/lib/productData';
 export default function ClientHome() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [wishCount, setWishCount] = useState(0);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   // Legacy: updateWishDot() (32-javascript-all.js ~1230-1234) — reads getWishlist().length
   // on mount and whenever anything (ProductCard, SRPProductCard, this drawer) fires
@@ -50,10 +53,18 @@ export default function ClientHome() {
     return () => window.removeEventListener(WISHLIST_EVENT, handler);
   }, []);
 
+  // Legacy: updateCartUI()'s #cartDot half (32-javascript-all.js ~1113-1116)
+  useEffect(() => {
+    setCartItemCount(sumCartCount(getCart()));
+    const handler = (e) => setCartItemCount(sumCartCount(e.detail?.cart ?? getCart()));
+    window.addEventListener(CART_EVENT, handler);
+    return () => window.removeEventListener(CART_EVENT, handler);
+  }, []);
+
   return (
     <>
       <div className="toast" id="toast"></div>
-      <Navbar wishCount={wishCount} onWishClick={() => setIsWishlistOpen(true)} />
+      <Navbar wishCount={wishCount} onWishClick={() => setIsWishlistOpen(true)} cartCount={cartItemCount} onCartClick={() => setIsCartOpen(true)} />
       <HeroSlider />
       <TrustStrip />
       <CatBar />
@@ -66,6 +77,7 @@ export default function ClientHome() {
       <BackToTop />
       <FloatButtons />
       <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       {/* বাকি overlays এখানে আসবে */}
     </>
   );
