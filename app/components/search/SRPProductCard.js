@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   isWishlisted, toggleWish,
-  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT,
+  PRODUCT_OPEN_EVENT, QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT, WISHLIST_EVENT,
 } from '@/lib/productData';
 
 // Converted from 32-javascript-all.js:
@@ -76,6 +76,14 @@ export default function SRPProductCard({ prod: p }) {
   const [slideIdx, setSlideIdx] = useState(0);
   const wishBtnRef = useRef(null);
   const touchRef = useRef({ x: 0, y: 0 });
+
+  // Legacy: renderProds(PRODS) was called after removeFromWishlistInModal() to
+  // un-heart cards on the grid too — here each card just resyncs itself instead.
+  useEffect(() => {
+    const handler = () => setWished(isWishlisted(p.id));
+    window.addEventListener(WISHLIST_EVENT, handler);
+    return () => window.removeEventListener(WISHLIST_EVENT, handler);
+  }, [p.id]);
 
   const sold = p.stock <= 0;
   const discPct = p.old > p.price ? Math.round((1 - p.price / p.old) * 100) : 0;
@@ -233,4 +241,4 @@ export default function SRPProductCard({ prod: p }) {
       </div>
     </div>
   );
-}
+    }
