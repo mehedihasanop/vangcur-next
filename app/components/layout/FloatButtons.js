@@ -6,24 +6,20 @@ import {
   DEFAULT_WA_LINK, computeWaLink, computeMsgLink,
   fetchContactSettings, subscribeContactSettings,
 } from '@/lib/floatButtonsData';
-import { PP_OPEN_EVENT, PP_CLOSE_EVENT } from '@/lib/uiEvents';
 
 // Converted from 32-javascript-all.js:
 // - Dynamic WhatsApp/Messenger link update from vc_contact admin settings
 //   (lines ~150-165)
-// - Hide/restore on Product Page open/close (lines ~758-760, ~790-792) —
-//   19-product-full-page.html isn't converted yet (Priority 2), so this
-//   listens for the shared PP_OPEN_EVENT/PP_CLOSE_EVENT custom events (see
-//   lib/uiEvents.js) instead of the legacy code reaching in via
-//   querySelector('.float-btns'). The future ProductDetail component should
-//   dispatch those on open/close.
 // Markup source: 16-float-buttons.html
 //
 // Note: this component only ever mounts inside ClientHome.js (the home page),
-// so it never renders on /srp — that route has its own inline WA/Messenger
-// buttons instead (see app/srp/SearchPageClient.js). It used to also hide on
-// an SRP_OPEN_EVENT/SRP_CLOSE_EVENT pair from when search was going to be a
-// same-page overlay; that's gone now that /srp is a real route.
+// so it never renders on /srp or /product/[slug] — those routes have their own
+// inline WA/Messenger buttons instead (see app/srp/SearchPageClient.js and
+// app/product/[slug]/ProductDetailClient.js). This used to hide/show on
+// SRP_OPEN/CLOSE and PP_OPEN/CLOSE custom events from when search and the
+// product page were both going to be same-page overlays; both are gone now
+// that the owner made /srp and /product/[slug] real routes instead, so there's
+// nothing left for this component to hide itself for.
 //
 // Note: .float-btns / .f-btn / .fb-wa / .fb-msg have no opacity:0 / vc-visible
 // reveal-gating in globals.css (verified via grep), so no scroll-reveal logic is
@@ -32,7 +28,6 @@ import { PP_OPEN_EVENT, PP_CLOSE_EVENT } from '@/lib/uiEvents';
 export default function FloatButtons() {
   const [waLink, setWaLink] = useState(DEFAULT_WA_LINK);
   const [msgLink, setMsgLink] = useState(null);
-  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,21 +44,14 @@ export default function FloatButtons() {
       setMsgLink(computeMsgLink(contact));
     });
 
-    const hide = () => setHidden(true);
-    const show = () => setHidden(false);
-    window.addEventListener(PP_OPEN_EVENT, hide);
-    window.addEventListener(PP_CLOSE_EVENT, show);
-
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
-      window.removeEventListener(PP_OPEN_EVENT, hide);
-      window.removeEventListener(PP_CLOSE_EVENT, show);
     };
   }, []);
 
   return (
-    <div className="float-btns" style={{ display: hidden ? 'none' : 'flex' }}>
+    <div className="float-btns" style={{ display: 'flex' }}>
       <button
         className="f-btn fb-wa"
         onClick={() => window.open(waLink, '_blank')}
@@ -86,4 +74,4 @@ export default function FloatButtons() {
       )}
     </div>
   );
-}
+          }
