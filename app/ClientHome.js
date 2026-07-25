@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Navbar from './components/layout/Navbar';
 import HeroSlider from './components/home/HeroSlider';
 import TrustStrip from './components/home/TrustStrip';
@@ -13,9 +14,10 @@ import CustomerGallery from './components/home/CustomerGallery';
 import Footer from './components/layout/Footer';
 import BackToTop from './components/layout/BackToTop';
 import FloatButtons from './components/layout/FloatButtons';
+import WishlistDrawer from './components/cart/WishlistDrawer';
+import { getWishlist, WISHLIST_EVENT } from '@/lib/productData';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import WishlistDrawer from './components/cart/WishlistDrawer';
 // import ProductDetail from './components/product/ProductDetail';
 // import CartDrawer from './components/cart/CartDrawer';
 // import LoginModal from './components/auth/LoginModal';
@@ -35,10 +37,23 @@ import FloatButtons from './components/layout/FloatButtons';
 // import BackInStockToast from './components/modals/BackInStockToast';
 
 export default function ClientHome() {
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [wishCount, setWishCount] = useState(0);
+
+  // Legacy: updateWishDot() (32-javascript-all.js ~1230-1234) — reads getWishlist().length
+  // on mount and whenever anything (ProductCard, SRPProductCard, this drawer) fires
+  // WISHLIST_EVENT via saveWishlist().
+  useEffect(() => {
+    setWishCount(getWishlist().length);
+    const handler = (e) => setWishCount((e.detail?.wishlist ?? getWishlist()).length);
+    window.addEventListener(WISHLIST_EVENT, handler);
+    return () => window.removeEventListener(WISHLIST_EVENT, handler);
+  }, []);
+
   return (
     <>
       <div className="toast" id="toast"></div>
-      <Navbar />
+      <Navbar wishCount={wishCount} onWishClick={() => setIsWishlistOpen(true)} />
       <HeroSlider />
       <TrustStrip />
       <CatBar />
@@ -50,6 +65,7 @@ export default function ClientHome() {
       <Footer />
       <BackToTop />
       <FloatButtons />
+      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
       {/* বাকি overlays এখানে আসবে */}
     </>
   );
