@@ -13,7 +13,6 @@ import CustomerGallery from './components/home/CustomerGallery';
 import Footer from './components/layout/Footer';
 import BackToTop from './components/layout/BackToTop';
 import FloatButtons from './components/layout/FloatButtons';
-import SearchPage from './components/search/SearchPage';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
 // import WishlistDrawer from './components/cart/WishlistDrawer';
@@ -51,7 +50,6 @@ export default function ClientHome() {
       <Footer />
       <BackToTop />
       <FloatButtons />
-      <SearchPage />
       {/* বাকি overlays এখানে আসবে */}
     </>
   );
