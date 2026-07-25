@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { SRP_TRIGGER_EVENT } from '@/lib/uiEvents';
+import { useRouter } from 'next/navigation';
 
-// Note: handleSearchKey previously called router.push('/search?q=...') and the
-// dropdown fetched from '/api/search' — neither route exists in this repo (no
-// app/search or app/api/search), and ClientHome.js/lib/uiEvents.js/BackToTop.js/
-// FloatButtons.js were all already built expecting search to open as the
-// 17-search-result-page.html overlay (SearchPage.js), not a routed page. Fixed
-// Enter-key submission below to open that overlay via SRP_TRIGGER_EVENT instead.
-// The instant dropdown's '/api/search' fetch is a separate pre-existing issue
-// (that endpoint still doesn't exist) — left as-is, out of scope for task 17.
+// Note: the dropdown below fetches '/api/search', which doesn't exist in this
+// repo (no app/api/search route) — a pre-existing issue, out of scope here.
 
 export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -19,6 +13,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const router = useRouter();
 
   const handleSearchInput = useCallback(async (value) => {
     setSearchQuery(value);
@@ -42,7 +37,8 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     }, 280);
   }, []);
 
-  // Legacy: viewAllSearch(q) -> openSRP(q) (32-javascript-all.js ~2978-2990)
+  // Legacy: viewAllSearch(q) -> openSRP(q) (32-javascript-all.js ~2978-2990) —
+  // /srp is a real page here (owner's decision), so this is a real navigation
   const handleSearchKey = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       const q = searchQuery.trim();
@@ -50,7 +46,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
       setMobileSearchOpen(false);
       setSearchQuery('');
       setSearchResults([]);
-      window.dispatchEvent(new CustomEvent(SRP_TRIGGER_EVENT, { detail: { query: q } }));
+      router.push(`/srp?q=${encodeURIComponent(q)}`);
     }
   };
 
