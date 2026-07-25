@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CART_ADD_EVENT } from '@/lib/cartData';
 
 // Note: the dropdown below fetches '/api/search', which doesn't exist in this
 // repo (no app/api/search route) — a pre-existing issue, out of scope here.
@@ -13,7 +14,25 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const cartBtnRef = useRef(null);
   const router = useRouter();
+
+  // Legacy: _triggerCartJiggle()'s `#cartDot` closest-button half (32-javascript-all.js
+  // ~1108-1111) — the other half (#floatCartBtn) belongs to a floating cart button
+  // that isn't part of any section built yet, so it's skipped; see CartSidebar.js note.
+  useEffect(() => {
+    const onCartAdd = () => {
+      const btn = cartBtnRef.current;
+      if (!btn) return;
+      btn.classList.remove('cart-jiggle');
+      void btn.offsetWidth;
+      btn.classList.add('cart-jiggle');
+      clearTimeout(btn._jiggleTimer);
+      btn._jiggleTimer = setTimeout(() => btn.classList.remove('cart-jiggle'), 750);
+    };
+    window.addEventListener(CART_ADD_EVENT, onCartAdd);
+    return () => window.removeEventListener(CART_ADD_EVENT, onCartAdd);
+  }, []);
 
   const handleSearchInput = useCallback(async (value) => {
     setSearchQuery(value);
@@ -115,7 +134,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                 <span className={`cart-dot${wishCount > 0 ? ' on' : ''}`} id="wishDot">{wishCount}</span>
               </button>
 
-              <button className="nav-icon-btn" onClick={onCartClick}>
+              <button className="nav-icon-btn" ref={cartBtnRef} onClick={onCartClick}>
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
                   <line x1="3" y1="6" x2="21" y2="6"/>
