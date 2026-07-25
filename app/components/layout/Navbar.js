@@ -8,7 +8,7 @@ import { CART_ADD_EVENT } from '@/lib/cartData';
 // Note: the dropdown below fetches '/api/search', which doesn't exist in this
 // repo (no app/api/search route) — a pre-existing issue, out of scope here.
 
-export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick }) {
+export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick, currentUser, onAccountClick }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -144,7 +144,16 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
               </button>
 
               <div id="navAuth">
-                <button className="nav-login-btn" onClick={onLoginClick}>লগইন করুন</button>
+                {currentUser ? (
+                  <button className="nav-user-btn" onClick={onAccountClick}>
+                    <div className="u-avatar">
+                      {(currentUser.name || '?').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    {currentUser.name || 'আমার অ্যাকাউন্ট'}
+                  </button>
+                ) : (
+                  <button className="nav-login-btn" onClick={onLoginClick}>লগইন করুন</button>
+                )}
               </div>
 
               <button className="nav-icon-btn" onClick={onTrackClick} title="অর্ডার ট্র্যাক করুন" style={{ position: 'relative' }}>
@@ -210,4 +219,4 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
       </div>
     </>
   );
-}
+                                        }
