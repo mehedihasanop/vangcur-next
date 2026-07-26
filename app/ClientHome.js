@@ -17,6 +17,7 @@ import FloatButtons from './components/layout/FloatButtons';
 import WishlistDrawer from './components/cart/WishlistDrawer';
 import CartSidebar from './components/cart/CartSidebar';
 import LoginModal from './components/auth/LoginModal';
+import AccountPage from './components/auth/AccountPage';
 import { getWishlist, WISHLIST_EVENT } from '@/lib/productData';
 import { getCart, cartCount as sumCartCount, CART_EVENT } from '@/lib/cartData';
 import { getCurrentUser, AUTH_EVENT } from '@/lib/authData';
@@ -24,7 +25,6 @@ import { OPEN_ACCOUNT_EVENT } from '@/lib/uiEvents';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
 // import ProductDetail from './components/product/ProductDetail';
-// import AccountPage from './components/auth/AccountPage';
 // import OrderForm from './components/order/OrderForm';
 // import PreConfirmLogin from './components/order/PreConfirmLogin';
 // import WaitingPage from './components/order/WaitingPage';
@@ -45,6 +45,7 @@ export default function ClientHome() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
   // Legacy: updateNavAuth() reacted to `currentUser` changing (login/register/OAuth/logout).
@@ -54,6 +55,18 @@ export default function ClientHome() {
     const handler = (e) => setCurrentUser(e.detail?.user ?? getCurrentUser());
     window.addEventListener(AUTH_EVENT, handler);
     return () => window.removeEventListener(AUTH_EVENT, handler);
+  }, []);
+
+  // Legacy: openAcc() — `if(!currentUser){openLogin();return;}` (~372). Navbar's avatar
+  // button and Footer's account link both just dispatch OPEN_ACCOUNT_EVENT; this is the
+  // one place that decides which overlay actually opens.
+  useEffect(() => {
+    const handler = () => {
+      if (getCurrentUser()) setIsAccountOpen(true);
+      else setIsLoginOpen(true);
+    };
+    window.addEventListener(OPEN_ACCOUNT_EVENT, handler);
+    return () => window.removeEventListener(OPEN_ACCOUNT_EVENT, handler);
   }, []);
 
   // Legacy: updateWishDot() (32-javascript-all.js ~1230-1234) — reads getWishlist().length
@@ -98,6 +111,12 @@ export default function ClientHome() {
       <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <AccountPage
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        currentUser={currentUser}
+        onAddAccount={() => setIsLoginOpen(true)}
+      />
       {/* বাকি overlays এখানে আসবে */}
     </>
   );
