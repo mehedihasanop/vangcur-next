@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { DEFAULT_CATEGORIES, fetchCategories, makeCatSlug, CATEGORY_FILTER_EVENT } from '@/lib/categoryData';
+import { sanitizeSvgHtml } from '@/lib/sanitize';
 
 // Converted from 32-javascript-all.js:
 // - getCatPerPage / getCatItems / updateCatCarousel / catCarouselSlide (lines ~7515-7575)
@@ -225,7 +226,7 @@ export default function Categories() {
                 >
                   <div className="cat-card-icon-wrap">
                     {isSvg ? (
-                      <span dangerouslySetInnerHTML={{ __html: cat.icon }} />
+                      <span dangerouslySetInnerHTML={{ __html: sanitizeSvgHtml(cat.icon) }} />
                     ) : (
                       cat.icon || '📦'
                     )}
