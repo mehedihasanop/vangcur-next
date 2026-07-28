@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { logWarn } from '@/lib/logger';
 
 // Converted from 32-javascript-all.js:
 // - initVcGallery() customer_reviews fetch half (lines ~6452-6470) — the vc_about_desc
@@ -195,8 +196,8 @@ export default function CustomerGallery() {
         .from('customer_reviews')
         .update({ like_count: newCount })
         .eq('id', review.id)
-        .then(({ error }) => { if (error) console.warn('Like update failed:', error); })
-        .catch((err) => console.warn('Like update failed:', err));
+        .then(({ error }) => { if (error) logWarn('Like update failed:', error); })
+        .catch((err) => logWarn('Like update failed:', err));
     }
   };
 
