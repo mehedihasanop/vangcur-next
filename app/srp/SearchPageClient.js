@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { searchProducts, matchCategories } from '@/lib/searchData';
 import { DEFAULT_CATEGORIES, fetchCategories, CATEGORY_FILTER_EVENT } from '@/lib/categoryData';
+import { sanitizeSvgHtml } from '@/lib/sanitize';
 import {
   DEFAULT_PRODS, fetchCustomProducts, mergeCustomProducts, subscribeCustomProducts,
 } from '@/lib/productData';
@@ -234,7 +235,7 @@ export default function SearchPageClient() {
                     return (
                       <div key={c.id} className="srp-cat-chip" onClick={() => goToCategory(c.id)}>
                         {isSvg
-                          ? <span className="srp-cat-chip-icon" dangerouslySetInnerHTML={{ __html: c.icon }} />
+                          ? <span className="srp-cat-chip-icon" dangerouslySetInnerHTML={{ __html: sanitizeSvgHtml(c.icon) }} />
                           : <span className="srp-cat-chip-icon">{c.icon || '📂'}</span>}
                         {c.name}
                       </div>
