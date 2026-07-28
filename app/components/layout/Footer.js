@@ -9,6 +9,7 @@ import {
 import {
   OPEN_ACCOUNT_EVENT, OPEN_TRACK_ORDER_EVENT, OPEN_OFFER_PAGE_EVENT, OPEN_INFO_EVENT,
 } from '@/lib/uiEvents';
+import { sanitizeHref } from '@/lib/sanitize';
 
 // Converted from 32-javascript-all.js:
 // - applyAdminSettings() (lines ~140-267) — logo / contact / footer desc+social /
@@ -37,10 +38,10 @@ function computeLogo(raw) {
 function computeContact(raw) {
   const c = { ...DEFAULT_FOOTER.contact };
   if (!raw) return c;
-  if (raw.phone) { c.phoneLabel = raw.phone; c.phoneHref = 'tel:' + raw.phone.replace(/\D/g, ''); }
-  if (raw.wa) { c.waHref = 'https://wa.me/' + ('88' + raw.wa.replace(/^88/, '').replace(/\D/g, '')); }
+  if (raw.phone) { c.phoneLabel = raw.phone; c.phoneHref = sanitizeHref('tel:' + raw.phone.replace(/\D/g, '')); }
+  if (raw.wa) { c.waHref = sanitizeHref('https://wa.me/' + ('88' + raw.wa.replace(/^88/, '').replace(/\D/g, ''))); }
   if (raw.email) c.email = raw.email;
-  if (raw.fb) c.fb = raw.fb;
+  if (raw.fb) c.fb = sanitizeHref(raw.fb);
   if (raw.addr) c.addr = raw.addr;
   return c;
 }
@@ -53,11 +54,11 @@ function computeFooterExtras(raw) {
   if (raw) {
     if (raw.desc) desc = raw.desc;
     if (raw.copy) copy = raw.copy;
-    if (raw.fb) social.fb = raw.fb;
-    if (raw.ig) social.ig = raw.ig;
-    if (raw.tk) social.tk = raw.tk;
-    if (raw.yt) social.yt = raw.yt;
-    if (raw.wa) social.wa = 'https://wa.me/' + raw.wa.replace(/\D/g, '');
+    if (raw.fb) social.fb = sanitizeHref(raw.fb);
+    if (raw.ig) social.ig = sanitizeHref(raw.ig);
+    if (raw.tk) social.tk = sanitizeHref(raw.tk);
+    if (raw.yt) social.yt = sanitizeHref(raw.yt);
+    if (raw.wa) social.wa = sanitizeHref('https://wa.me/' + raw.wa.replace(/\D/g, ''));
   }
   return { desc, copy, social };
 }
