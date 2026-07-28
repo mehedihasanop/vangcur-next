@@ -9,7 +9,10 @@ import {
   AUTH_EVENT, getCurrentUser, saveCurrentUser, saveLinkedAccount,
   signInWithPassword, signUp, signInWithGoogle, checkOAuthCallback,
   syncWishlistFromSupabase, saveWishlistToSupabase, mergeGuestOrdersToUser,
+  requestPasswordReset,
 } from '@/lib/authData';
+import { checkPasswordStrength } from '@/lib/passwordStrength';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
 
 // Converted from 32-javascript-all.js:
 // - openLogin()/closeLogin() (~127-158) -> isOpen/onClose props, same pattern as
@@ -32,6 +35,13 @@ import {
 //   here needs to change.
 // - _pendingOrderAfterLogin -> confirmOrder() resume (~197-200, ~243-246) is OrderForm's
 //   concern once it exists; `onAuthSuccess` below is the hook it will use for that.
+// - Password reset (owner-requested, 2026-07-27): a third `mode === 'forgot'` branch,
+//   backed by requestPasswordReset() in lib/authData.js — step 2 of that flow (setting
+//   the actual new password) lives on the dedicated /reset-password route, not here,
+//   since the user arrives there from an email link in a fresh session.
+// - Password strength (owner-requested, 2026-07-27): doRegister()'s old `pw.length < 6`
+//   check is now checkPasswordStrength() from lib/passwordStrength.js (zxcvbn-based),
+//   with a live PasswordStrengthMeter shown under the register password field.
 // Markup source: 21-login-modal.html
 
 function ErrMsg({ text }) {
@@ -56,6 +66,11 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
   const [googleLoading, setGoogleLoading] = useState(false);
   const oauthCheckedRef = useRef(false);
 
+  // Password reset (owner-requested, 2026-07-27)
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitted, setForgotSubmitted] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
   // Legacy: openLogin()/closeLogin() -> lockBody()/unlockBody() (iOS scroll fix)
   useEffect(() => {
     if (isOpen) lockBody();
@@ -67,6 +82,7 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
     if (isOpen) {
       setMode(orderMode ? 'login' : 'login');
       setLErr(''); setRErr('');
+      setForgotSubmitted(false); setForgotEmail('');
     }
   }, [isOpen, orderMode]);
 
@@ -113,6 +129,18 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
 
   const switchToRegister = () => { setMode('register'); setRErr(''); };
   const switchToLogin = () => { setMode('login'); setLErr(''); };
+  const switchToForgot = () => { setMode('forgot'); setForgotSubmitted(false); setForgotEmail(lEmail); };
+
+  // Owner-requested (2026-07-27): step 1 of the reset flow — see lib/authData.js's
+  // requestPasswordReset() note for why this never reveals whether the email exists.
+  const handleForgotSubmit = async () => {
+    const em = forgotEmail.trim();
+    if (!em) return;
+    setForgotLoading(true);
+    await requestPasswordReset(supabase, em);
+    setForgotLoading(false);
+    setForgotSubmitted(true);
+  };
 
   const finishAuthSuccess = async (safeUser, successMsg) => {
     saveCurrentUser(safeUser);
@@ -164,7 +192,9 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
     if (!nm) { setRErr('নাম দিন'); return; }
     if (!ph || !/^01[3-9]\d{8}$/.test(ph)) { setRErr('সঠিক মোবাইল নম্বর দিন'); return; }
     if (!em) { setRErr('ইমেইল দিন'); return; }
-    if (pw.length < 6) { setRErr('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে'); return; }
+    const strength = await checkPasswordStrength(pw);
+    if (!strength.minLenOk) { setRErr('পাসওয়ার্ড কমপক্ষে ৮ অক্ষর হতে হবে'); return; }
+    if (!strength.ok) { setRErr('আরও শক্তিশালী পাসওয়ার্ড দিন (নিচের মিটার দেখুন)'); return; }
     setRErr('');
 
     const { data, error } = await signUp(supabase, { name: nm, phone: ph, email: em, password: pw });
@@ -202,8 +232,8 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
 
   const showLoginTitle = orderMode ? 'লগইন করুন' : 'স্বাগতম 👋';
   const showLoginSub = 'আপনার অ্যাকাউন্টে প্রবেশ করুন';
-  const title = mode === 'login' ? showLoginTitle : 'অ্যাকাউন্ট তৈরি করুন';
-  const sub = mode === 'login' ? showLoginSub : 'নতুন অ্যাকাউন্ট খুলুন';
+  const title = mode === 'login' ? showLoginTitle : mode === 'register' ? 'অ্যাকাউন্ট তৈরি করুন' : 'পাসওয়ার্ড রিসেট করুন';
+  const sub = mode === 'login' ? showLoginSub : mode === 'register' ? 'নতুন অ্যাকাউন্ট খুলুন' : 'আপনার ইমেইল দিন, আমরা লিংক পাঠাব';
 
   const handleOrderBack = () => {
     onClose();
@@ -262,7 +292,7 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
               </div>
               <div className="login-remember-row">
                 <label><input type="checkbox" id="rememberMe" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} /> মনে রাখুন</label>
-                <button className="login-forgot" onClick={() => showToast('পাসওয়ার্ড রিসেট সুবিধা শীঘ্রই আসছে')}>পাসওয়ার্ড ভুলে গেছেন?</button>
+                <button className="login-forgot" onClick={switchToForgot}>পাসওয়ার্ড ভুলে গেছেন?</button>
               </div>
               {lErr && <ErrMsg text={lErr} />}
               <button className="btn-login" onClick={doLogin}>লগইন করুন</button>
@@ -293,7 +323,7 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
                 </button>
               )}
             </div>
-          ) : (
+          ) : mode === 'register' ? (
             <div id="regForm">
               <div className="fg">
                 <label>পূর্ণ নাম</label>
@@ -315,7 +345,7 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
                 <div style={{ position: 'relative' }}>
                   <input
                     className="finp no-icon" id="rPass" type={showRPass ? 'text' : 'password'}
-                    placeholder="কমপক্ষে ৬ অক্ষর" style={{ paddingRight: 44 }}
+                    placeholder="কমপক্ষে ৮ অক্ষর, শক্তিশালী পাসওয়ার্ড" style={{ paddingRight: 44 }}
                     value={rPass} onChange={(e) => setRPass(e.target.value)}
                   />
                   <button
@@ -326,6 +356,7 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
                     👁
                   </button>
                 </div>
+                <PasswordStrengthMeter password={rPass} />
               </div>
               {rErr && <ErrMsg text={rErr} />}
               <button className="btn-login" onClick={doRegister}>অ্যাকাউন্ট তৈরি করুন</button>
@@ -341,6 +372,33 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
                 >
                   ← ফিরে যান
                 </button>
+              )}
+            </div>
+          ) : (
+            <div id="forgotForm">
+              {forgotSubmitted ? (
+                <div style={{ textAlign: 'center', padding: '12px 4px' }}>
+                  <div style={{ fontSize: 40, marginBottom: 10 }}>📧</div>
+                  <p style={{ fontSize: 13.5, color: '#374151', lineHeight: 1.6, fontFamily: "'Hind Siliguri','DM Sans',sans-serif" }}>
+                    যদি <strong>{forgotEmail.trim()}</strong> দিয়ে কোনো অ্যাকাউন্ট থাকে, একটি পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। ইমেইল চেক করুন।
+                  </p>
+                  <button className="btn-login" style={{ marginTop: 16 }} onClick={switchToLogin}>লগইনে ফিরে যান</button>
+                </div>
+              ) : (
+                <>
+                  <div className="fg">
+                    <label>ইমেইল</label>
+                    <input
+                      className="finp no-icon" type="email" placeholder="name@example.com" autoComplete="email"
+                      value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleForgotSubmit(); }}
+                    />
+                  </div>
+                  <button className="btn-login" onClick={handleForgotSubmit} disabled={forgotLoading} style={{ opacity: forgotLoading ? 0.7 : 1 }}>
+                    রিসেট লিংক পাঠান
+                  </button>
+                  <div className="login-note" style={{ marginTop: 16 }}>মনে পড়েছে? <button onClick={switchToLogin}>লগইন করুন</button></div>
+                </>
               )}
             </div>
           )}
