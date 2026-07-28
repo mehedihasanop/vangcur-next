@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { sanitizeSvgHtml } from '@/lib/sanitize';
+import { logWarn } from '@/lib/logger';
 
 const DUO_TOTAL = 13;
 const AUTOPLAY_MS = 3500;
@@ -230,7 +232,7 @@ export default function HeroSlider({ onCategoryClick }) {
           setCards(padded);
           try { localStorage.setItem('vc_cath_cache', JSON.stringify(padded)); } catch (e) {}
         }
-      } catch (e) { console.warn('Hero card fetch failed:', e); }
+      } catch (e) { logWarn('Hero card fetch failed:', e); }
     };
     fetchCards();
 
@@ -295,7 +297,7 @@ export default function HeroSlider({ onCategoryClick }) {
                   className="cath-emoji-bg"
                   style={{ fontSize: 0 }}
                   dangerouslySetInnerHTML={{
-                    __html: card.emoji.replace(
+                    __html: sanitizeSvgHtml(card.emoji).replace(
                       /<svg/,
                       '<svg style="width:80px;height:80px;filter:drop-shadow(0 4px 20px rgba(0,0,0,.6))"'
                     ),
