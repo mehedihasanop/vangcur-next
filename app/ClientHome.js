@@ -13,10 +13,12 @@ import CustomerGallery from './components/home/CustomerGallery';
 import Footer from './components/layout/Footer';
 import WaitingPage from './components/order/WaitingPage';
 import BgConfirmPopup from './components/order/BgConfirmPopup';
+import PostOrderInfo from './components/order/PostOrderInfo';
+import BackToTop from './components/layout/BackToTop';
+import FloatButtons from './components/layout/FloatButtons';
+import InfoOverlay from './components/modals/InfoOverlay';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
-// import BackToTop from './components/layout/BackToTop';
-// import FloatButtons from './components/layout/FloatButtons';
 // import SearchPage from './components/search/SearchPage';
 // import WishlistDrawer from './components/cart/WishlistDrawer';
 // import ProductDetail from './components/product/ProductDetail';
@@ -25,9 +27,7 @@ import BgConfirmPopup from './components/order/BgConfirmPopup';
 // import AccountPage from './components/auth/AccountPage';
 // import OrderForm from './components/order/OrderForm';
 // import PreConfirmLogin from './components/order/PreConfirmLogin';
-// import PostOrderInfo from './components/order/PostOrderInfo';
 // import OrderTracking from './components/order/OrderTracking';
-// import PolicyModal from './components/modals/PolicyModal';
 // import WarrantyModal from './components/modals/WarrantyModal';
 // import OfferPopup from './components/modals/OfferPopup';
 // import StockNotifyModal from './components/modals/StockNotifyModal';
@@ -51,8 +51,10 @@ export default function ClientHome() {
       <Footer />
       <WaitingPage />
       <BgConfirmPopup />
-      {/* BackToTop এখানে আসবে */}
-      {/* FloatButtons এখানে আসবে */}
+      <PostOrderInfo />
+      <BackToTop />
+      <FloatButtons />
+      <InfoOverlay />
       {/* Overlays এখানে আসবে */}
     </>
   );
