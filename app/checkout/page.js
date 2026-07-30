@@ -11,6 +11,7 @@ import {
 import { showToast } from '@/lib/toast';
 import LoginModal from '@/app/components/auth/LoginModal';
 import PreConfirmLoginModal from '@/app/components/checkout/PreConfirmLoginModal';
+import PolicyModal from '@/app/components/checkout/PolicyModal';
 import {
   DISTRICTS,
   DEFAULT_SHIP_CFG,
@@ -236,6 +237,21 @@ export default function CheckoutPage() {
   const toggleTerms = () => {
     setTermsChecked((v) => !v);
     setTermsError(false);
+  };
+
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+
+  // Legacy: policyAgreeAndConfirm() — 30-policy-modal.html bottom button. Same as
+  // handleConfirmClick() but skips the terms-check branch (agreeing via this button
+  // IS the terms check) and closes the modal first.
+  const policyAgreeAndConfirm = () => {
+    setTermsChecked(true);
+    setPolicyModalOpen(false);
+    if (!getCurrentUser()) {
+      setShowPreConfirm(true);
+      return;
+    }
+    submitOrderNow();
   };
 
   const copyBkash = async () => {
@@ -679,7 +695,7 @@ export default function CheckoutPage() {
               <div className="terms-text">
                 আমি ভাঙচুরের সকল{' '}
                 <span
-                  onClick={(e) => { e.stopPropagation(); /* openPolicyModal() — section 30 policy modal তৈরি হলে হুক হবে */ }}
+                  onClick={(e) => { e.stopPropagation(); setPolicyModalOpen(true); }}
                   style={{ color: 'var(--blue)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
                 >
                   নীতিমালা ও শর্তাবলী
@@ -719,6 +735,11 @@ export default function CheckoutPage() {
       initialMode={loginInitialMode}
       onAuthSuccess={() => submitOrderNow()}
       onBackFromOrder={() => setShowPreConfirm(true)}
+    />
+    <PolicyModal
+      open={policyModalOpen}
+      onClose={() => setPolicyModalOpen(false)}
+      onAgreeAndConfirm={policyAgreeAndConfirm}
     />
     </>
   );
