@@ -95,9 +95,20 @@ export default function CheckoutPage() {
   useEffect(() => {
     lockBody();
     try {
-      const cart = JSON.parse(localStorage.getItem('vc_cart') || '[]');
-      setCartItems(Array.isArray(cart) ? cart : []);
-      setCartWarnVisible(!Array.isArray(cart) || cart.length === 0);
+      // Legacy: orderNow()'s empty-cart branch built a separate `orderItems` array
+      // instead of using the persistent `cart` (see QuickOrderBridge.js). This key is
+      // one-time — read once, then cleared, so a later /checkout visit (refresh, or
+      // navigating back) falls through to the normal persistent cart below.
+      const quickOrder = JSON.parse(sessionStorage.getItem('vc_quick_order_items') || 'null');
+      if (Array.isArray(quickOrder) && quickOrder.length) {
+        sessionStorage.removeItem('vc_quick_order_items');
+        setCartItems(quickOrder);
+        setCartWarnVisible(false);
+      } else {
+        const cart = JSON.parse(localStorage.getItem('vc_cart') || '[]');
+        setCartItems(Array.isArray(cart) ? cart : []);
+        setCartWarnVisible(!Array.isArray(cart) || cart.length === 0);
+      }
     } catch (e) {
       setCartWarnVisible(true);
     }
