@@ -10,6 +10,7 @@ import {
   QUICK_ORDER_EVENT, QUICK_CART_EVENT, STOCK_NOTIFY_EVENT,
 } from '@/lib/productData';
 import { fetchProductDetail } from '@/lib/productDetailData';
+import { trackProductView } from '@/lib/visitorTracking';
 import {
   DEFAULT_WA_LINK, computeWaLink, computeMsgLink, fetchContactSettings, subscribeContactSettings,
 } from '@/lib/floatButtonsData';
@@ -166,6 +167,14 @@ export default function ProductDetailClient({ slug, initialId }) {
     () => findProdBySlug(prods, slug) || (initialId ? prods.find((x) => String(x.id) === String(initialId)) : null),
     [prods, slug, initialId],
   );
+
+  // ✅ Product View Tracking — legacy openPP()-এর নতুন যোগ হওয়া page_views insert-এর
+  // Next.js সমতুল্য। admin.html-এর Traffic Analytics পেজের "সর্বাধিক দেখা প্রোডাক্ট"
+  // widget-টা এই ডাটার উপর নির্ভর করে।
+  useEffect(() => {
+    if (!baseProd) return;
+    trackProductView(supabase, baseProd.id);
+  }, [baseProd?.id]);
 
   // ── Lazy detail fields (long description, features, FAQs, closing, full specs) ──
   const [detail, setDetail] = useState(null);
