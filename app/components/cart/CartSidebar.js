@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
   DEFAULT_PRODS, fetchCustomProducts, mergeCustomProducts,
 } from '@/lib/productData';
 import {
   getCart, saveCart, cartTotal, addToCart, updateQty, removeItem,
-  CART_EVENT, CART_ADD_EVENT, CART_CHECKOUT_EVENT, clearCartOnRealPagehide,
+  CART_EVENT, CART_ADD_EVENT, clearCartOnRealPagehide,
 } from '@/lib/cartData';
 import { QUICK_CART_EVENT } from '@/lib/productData';
 import { lockBody, unlockBody } from '@/lib/bodyScrollLock';
@@ -25,10 +26,17 @@ import { showToast } from '@/lib/toast';
 // - updQty()/remItem() -> lib/cartData.js's updateQty()/removeItem() (debounced
 //   storage write); this component updates its own state immediately for
 //   instant UI feedback and lets the debounce only govern the localStorage write.
-// - checkout() (lines ~1168-1173) -> dispatches CART_CHECKOUT_EVENT with a copy of
-//   the cart (legacy's orderItems array) instead of calling openOrder(false)
-//   directly, since 23-order-overlay.html (OrderForm.js) isn't built yet — same
-//   "dispatch now, wire a listener later" pattern as QUICK_ORDER_EVENT.
+// - checkout() (lines ~1168-1173) -> router.push('/checkout') instead of calling
+//   openOrder(false) directly, since the legacy modal was rebuilt as a real route
+//   (app/checkout/page.js, from 23-order-overlay.html). FIXED BUG: this used to
+//   dispatch a CART_CHECKOUT_EVENT custom event with no listener anywhere in the
+//   app (same "dispatch now, wire a listener later" idea as QUICK_ORDER_EVENT, but
+//   the listener was never added), so clicking "চেকআউট করুন" silently did nothing.
+//   No bridge/listener component is needed here though (unlike QuickOrderBridge.js):
+//   the full cart is already persisted to localStorage's 'vc_cart' key by saveCart()
+//   on every change, and /checkout's mount effect already reads that same key as its
+//   fallback whenever there's no one-time 'vc_quick_order_items' session key — so a
+//   plain navigation is all that was missing.
 // - addToCart()'s stock-clamp logic -> lib/cartData.js's addToCart(); this
 //   component listens for QUICK_CART_EVENT (dispatched by ProductCard,
 //   SRPProductCard, WishlistDrawer) to actually call it, since those components
@@ -64,6 +72,7 @@ function CartImg({ emoji }) {
 }
 
 export default function CartSidebar({ isOpen, onClose }) {
+  const router = useRouter();
   const [cart, setCart] = useState([]);
   const prodsRef = useRef(DEFAULT_PRODS);
 
@@ -128,7 +137,7 @@ export default function CartSidebar({ isOpen, onClose }) {
   const handleCheckout = () => {
     if (!cart.length) { showToast('কার্ট খালি!'); return; }
     onClose();
-    window.dispatchEvent(new CustomEvent(CART_CHECKOUT_EVENT, { detail: { items: cart.map((i) => ({ ...i })) } }));
+    router.push('/checkout');
   };
 
   const goToProducts = () => {
