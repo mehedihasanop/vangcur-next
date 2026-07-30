@@ -1,6 +1,6 @@
 import './globals.css';
 import Script from 'next/script';
-import VisitorTracker from './components/analytics/VisitorTracker';
+import QuickOrderBridge from './components/order/QuickOrderBridge';
 
 export const viewport = {
   width: 'device-width',
@@ -79,9 +79,8 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        {/* ✅ Visitor tracking — no UI, fires once per app session (see lib/visitorTracking.js) */}
-        <VisitorTracker />
         {children}
+        <QuickOrderBridge />
         {/* Microsoft Clarity */}
         <Script id="clarity" strategy="afterInteractive">
           {`(function(c,l,a,r,i,t,y){
