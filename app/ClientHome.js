@@ -13,7 +13,7 @@ import CustomerGallery from './components/home/CustomerGallery';
 import Footer from './components/layout/Footer';
 import WaitingPage from './components/order/WaitingPage';
 import BgConfirmPopup from './components/order/BgConfirmPopup';
-import PostOrderInfo from './components/order/PostOrderInfo';
+// import PostOrderInfo from './components/order/PostOrderInfo'; // ⚠️ ফাইল এখনো তৈরি হয়নি — build ভাঙছিল, সাময়িক কমেন্ট
 import BackToTop from './components/layout/BackToTop';
 import FloatButtons from './components/layout/FloatButtons';
 import InfoOverlay from './components/modals/InfoOverlay';
@@ -51,7 +51,7 @@ export default function ClientHome() {
       <Footer />
       <WaitingPage />
       <BgConfirmPopup />
-      <PostOrderInfo />
+      {/* <PostOrderInfo /> — ⚠️ কম্পোনেন্ট এখনো তৈরি হয়নি, তৈরি হলে উপরের import ও এই লাইন আনকমেন্ট করুন */}
       <BackToTop />
       <FloatButtons />
       <InfoOverlay />
