@@ -6,6 +6,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { lockBody, unlockBody } from '@/lib/bodyScrollLock';
 import { DEFAULT_PRODS } from '@/lib/productData';
 import {
+  getCurrentUser, saveCurrentUser, checkOAuthCallback, mergeGuestOrdersToUser, signInWithGoogle,
+} from '@/lib/authData';
+import { showToast } from '@/lib/toast';
+import LoginModal from '@/app/components/auth/LoginModal';
+import PreConfirmLoginModal from '@/app/components/checkout/PreConfirmLoginModal';
+import {
   DISTRICTS,
   DEFAULT_SHIP_CFG,
   getShipOptions,
@@ -28,6 +34,21 @@ import {
 // (section 25, এখনো তৈরি হয়নি) দেখাত realtime approve/reject status সহ। যেহেতু সেটা
 // এখনো নেই, অর্ডার সফল হলে এই পেজেই একটা সহজ "pending" কার্ড দেখানো হচ্ছে (অস্থায়ী)।
 // section 25 বানানোর পর এটা প্রতিস্থাপন করতে হবে পূর্ণ realtime waiting-experience দিয়ে।
+//
+// 24-pre-confirm-login.html (guest-only pre-confirm login prompt) — integrated here:
+// - handleConfirm() split into handleConfirmClick() (terms-check + guest-check, was
+//   legacy's preConfirmCheck()) and submitOrderNow() (the actual insert, was confirmOrder()).
+//   A logged-in user skips PreConfirmLoginModal entirely and goes straight to submitOrderNow().
+// - preConfirmGoLogin()/preConfirmGoRegister() -> open <LoginModal orderMode initialMode=.../>,
+//   whose onAuthSuccess prop is wired to submitOrderNow() (mirrors _pendingOrderAfterLogin).
+// - preConfirmGoGoogle() -> saves vc_pending_order_data + vc_post_login_action, then
+//   signInWithGoogle(supabase, '/checkout') so Google returns here (not the homepage).
+//   Note: the existing vc_form_draft/vc_ship sessionStorage restore-on-mount above already
+//   repopulates every field on that return trip; vc_pending_order_data is kept anyway as
+//   the same explicit belt-and-suspenders transfer legacy used, in case sessionStorage
+//   doesn't survive a given browser's OAuth redirect.
+// - The mount effect below (resumePendingOrder) detects a post-Google-redirect return via
+//   vc_post_login_action==='confirmOrder' and auto-resumes submitOrderNow() once signed in.
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -63,6 +84,12 @@ export default function CheckoutPage() {
   const [orderResult, setOrderResult] = useState(null); // { num, isGuest }
   const confirmLockRef = useRef(false);
 
+  // 24-pre-confirm-login.html state
+  const [showPreConfirm, setShowPreConfirm] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginInitialMode, setLoginInitialMode] = useState('login');
+  const submitOrderNowRef = useRef(null);
+
   // ── Mount: load cart, restore draft, fetch bkash/shipping config, lock scroll ──
   useEffect(() => {
     lockBody();
@@ -92,6 +119,50 @@ export default function CheckoutPage() {
     fetchBkashNumber(supabase).then(setBkashNum);
     fetchShipConfig(supabase).then(setShipCfg);
     return () => unlockBody();
+  }, []);
+
+  // Legacy: preConfirmGoGoogle()'s "return trip" half — detects arriving back at
+  // /checkout after a Google redirect that was headed toward an order confirmation,
+  // and resumes it automatically instead of leaving the person to click again.
+  useEffect(() => {
+    (async () => {
+      let action = null;
+      try { action = localStorage.getItem('vc_post_login_action'); } catch (e) {}
+      if (action !== 'confirmOrder') return;
+
+      const safeUser = await checkOAuthCallback(supabase);
+      const user = safeUser || getCurrentUser();
+      if (!user) return; // redirect landed here for some other reason — leave the flag alone
+
+      if (safeUser) {
+        saveCurrentUser(safeUser);
+        await mergeGuestOrdersToUser(supabase, safeUser.email, safeUser.id);
+      }
+      try { localStorage.removeItem('vc_post_login_action'); } catch (e) {}
+
+      let pending = null;
+      try {
+        const raw = localStorage.getItem('vc_pending_order_data');
+        localStorage.removeItem('vc_pending_order_data');
+        pending = raw ? JSON.parse(raw) : null;
+      } catch (e) {}
+      if (pending) {
+        if (pending.name) setName(pending.name);
+        if (pending.phone) setPhone(pending.phone);
+        if (pending.dist) setDist(pending.dist);
+        if (pending.addr) setAddr(pending.addr);
+        if (pending.email !== undefined) setEmail(pending.email);
+        if (pending.txn) setTxn(pending.txn);
+        if (pending.l4) setLast4(pending.l4);
+        if (pending.ship) setSelectedShip(pending.ship);
+      }
+
+      showToast('✅ লগইন সফল — অর্ডার সম্পন্ন হচ্ছে...');
+      // submitOrderNow depends on several pieces of state set just above; a short delay
+      // lets those re-renders settle before it reads them via the ref (avoids a stale closure).
+      setTimeout(() => submitOrderNowRef.current && submitOrderNowRef.current(), 350);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Persist form draft on change (saveFormDraft) ──
@@ -184,14 +255,23 @@ export default function CheckoutPage() {
   const total = sub + sc;
   const balance = Math.max(0, total - 200);
 
-  // ── confirmOrder() — rate limit, spam check, counter, insert ──
-  const handleConfirm = useCallback(async () => {
+  // Legacy: preConfirmCheck() — terms check, then either the guest prompt or straight through
+  const handleConfirmClick = () => {
     if (!termsChecked) {
       setTermsError(true);
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
     }
+    if (!getCurrentUser()) {
+      setShowPreConfirm(true);
+      return;
+    }
+    submitOrderNow();
+  };
+
+  // ── confirmOrder() — rate limit, spam check, counter, insert ──
+  const submitOrderNow = useCallback(async () => {
     if (confirmLockRef.current) return;
     confirmLockRef.current = true;
     setSubmitting(true);
@@ -291,7 +371,44 @@ export default function CheckoutPage() {
       confirmLockRef.current = false;
       alert('দুঃখিত, একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
-  }, [termsChecked, phone, cartItems, sc, name, dist, addr, email, selectedShip, txn, last4]);
+  }, [phone, cartItems, sc, name, dist, addr, email, selectedShip, txn, last4]);
+
+  useEffect(() => { submitOrderNowRef.current = submitOrderNow; }, [submitOrderNow]);
+
+  // 24-pre-confirm-login.html action handlers
+  const preConfirmSkip = () => {
+    setShowPreConfirm(false);
+    submitOrderNow();
+  };
+  const preConfirmGoLogin = () => {
+    setShowPreConfirm(false);
+    setLoginInitialMode('login');
+    setShowLoginModal(true);
+  };
+  const preConfirmGoRegister = () => {
+    setShowPreConfirm(false);
+    setLoginInitialMode('register');
+    setShowLoginModal(true);
+  };
+  const preConfirmGoGoogle = async () => {
+    const pendingData = {
+      items: cartItems, ship: selectedShip, name, phone, dist, addr, email, txn, l4: last4, savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem('vc_pending_order_data', JSON.stringify(pendingData));
+      localStorage.setItem('vc_post_login_action', 'confirmOrder');
+    } catch (e) {}
+    setShowPreConfirm(false);
+    const { error } = await signInWithGoogle(supabase, '/checkout');
+    if (error) {
+      showToast('❌ Google লগইন ব্যর্থ হয়েছে');
+      try {
+        localStorage.removeItem('vc_pending_order_data');
+        localStorage.removeItem('vc_post_login_action');
+      } catch (e2) {}
+    }
+    // On success the page redirects away — nothing else to do here.
+  };
 
   const closeCheckout = () => router.push('/');
 
@@ -321,6 +438,7 @@ export default function CheckoutPage() {
   }
 
   return (
+    <>
     <div className="order-overlay show" id="orderOverlay">
       <div className="order-box">
         <div
@@ -577,7 +695,7 @@ export default function CheckoutPage() {
 
             <div className="o-foot" style={{ border: 'none', padding: '14px 0 0' }}>
               <button className="btn-back" onClick={() => goBack(2)}>← পেছনে</button>
-              <button className="btn-next" style={{ background: 'var(--dark)' }} onClick={handleConfirm} disabled={submitting}>
+              <button className="btn-next" style={{ background: 'var(--dark)' }} onClick={handleConfirmClick} disabled={submitting}>
                 {submitting ? '⏳ প্রক্রিয়া হচ্ছে...' : '✅ অর্ডার কনফার্ম করুন'}
               </button>
             </div>
@@ -585,5 +703,23 @@ export default function CheckoutPage() {
         )}
       </div>
     </div>
+
+    <PreConfirmLoginModal
+      isOpen={showPreConfirm}
+      onClose={() => setShowPreConfirm(false)}
+      onLogin={preConfirmGoLogin}
+      onRegister={preConfirmGoRegister}
+      onGoogle={preConfirmGoGoogle}
+      onSkip={preConfirmSkip}
+    />
+    <LoginModal
+      isOpen={showLoginModal}
+      onClose={() => setShowLoginModal(false)}
+      orderMode
+      initialMode={loginInitialMode}
+      onAuthSuccess={() => submitOrderNow()}
+      onBackFromOrder={() => setShowPreConfirm(true)}
+    />
+    </>
   );
 }
