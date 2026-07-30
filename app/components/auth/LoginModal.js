@@ -48,7 +48,7 @@ function ErrMsg({ text }) {
   return <div className="err-msg" style={{ textAlign: 'center', marginBottom: 4 }}>{text}</div>;
 }
 
-export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthSuccess, onBackFromOrder }) {
+export default function LoginModal({ isOpen, onClose, orderMode = false, initialMode = 'login', onAuthSuccess, onBackFromOrder }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [lEmail, setLEmail] = useState('');
   const [lPass, setLPass] = useState('');
@@ -80,11 +80,11 @@ export default function LoginModal({ isOpen, onClose, orderMode = false, onAuthS
   // Reset to the right starting form whenever the modal (re)opens
   useEffect(() => {
     if (isOpen) {
-      setMode(orderMode ? 'login' : 'login');
+      setMode(initialMode || 'login');
       setLErr(''); setRErr('');
       setForgotSubmitted(false); setForgotEmail('');
     }
-  }, [isOpen, orderMode]);
+  }, [isOpen, initialMode]);
 
   // Legacy: handleOAuthCallback() IIFE — runs once; this component is always mounted
   // (hidden via isOpen), so it's ready in time to catch the post-Google-redirect session
