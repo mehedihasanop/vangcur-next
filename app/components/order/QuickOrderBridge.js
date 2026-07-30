@@ -28,9 +28,11 @@ import {
 // Mounted once in the root layout (app/layout.js) so it's active on every route that
 // can dispatch QUICK_ORDER_EVENT (/, /srp, /product/[slug]) — not just the home page.
 //
-// NOT yet fixed (flagged, out of scope for this fix): CartSidebar.js's checkout()
-// dispatches CART_CHECKOUT_EVENT (cartData.js) with the same "no listener built yet"
-// problem — the full-cart checkout button has the identical bug. Not touched here.
+// UPDATE: CartSidebar.js's checkout() had the identical "dispatch, no listener"
+// bug (a dead CART_CHECKOUT_EVENT). That's since been fixed directly in
+// CartSidebar.js with a router.push('/checkout') — no bridge component needed
+// there, since the full cart is already persisted to the 'vc_cart' localStorage
+// key that /checkout's mount effect reads as its fallback.
 
 export default function QuickOrderBridge() {
   const router = useRouter();
