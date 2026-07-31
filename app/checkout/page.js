@@ -24,6 +24,8 @@ import {
   fetchBkashNumber,
   fetchShipConfig,
 } from '@/lib/checkoutData';
+import { saveDraft, clearDraft } from '@/lib/draftRecovery';
+import { sendLead } from '@/lib/leadCapture';
 
 // Converted from 32-javascript-all.js — section 23 (order-overlay), legacy lines ~4470-5090,
 // 6737-6800 (terms checkbox), 6964-7020 (steps/QR/copy).
@@ -187,7 +189,43 @@ export default function CheckoutPage() {
     } catch (e) {
       // ignore
     }
-  }, [name, phone, dist, addr, email, txn, last4]);
+    // Cross-session copy for the recovery toast (RecoveryToast.js) — sessionStorage
+    // above only survives the current tab, so a customer who fully closes out and
+    // comes back days later would otherwise never see anything to recover.
+    saveDraft({ name, phone, dist, addr, email, items: cartItems, ship: selectedShip });
+  }, [name, phone, dist, addr, email, txn, last4, cartItems, selectedShip]);
+
+  // ── Lead capture on abandon (owner's original Leads-sheet system) ──
+  // Fires once per checkout attempt, whenever the tab is hidden/closed/navigated
+  // away from before an order is actually confirmed, as long as there's at least
+  // a phone number captured. Covers both of the owner's two cases (leaving step 1,
+  // or reaching step 2 and leaving) — the sheet doesn't distinguish which, it's
+  // just "whatever we knew at the moment they left".
+  const leadIdRef = useRef(null);
+  const orderDoneRef = useRef(false);
+  useEffect(() => {
+    if (!leadIdRef.current) {
+      try {
+        leadIdRef.current = sessionStorage.getItem('vc_lead_id') || `LD-${Date.now()}`;
+        sessionStorage.setItem('vc_lead_id', leadIdRef.current);
+      } catch (e) {
+        leadIdRef.current = `LD-${Date.now()}`;
+      }
+    }
+    const fireLead = () => {
+      if (orderDoneRef.current) return;
+      sendLead({ leadId: leadIdRef.current, name, phone, dist, addr, email, items: cartItems });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') fireLead();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', fireLead);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', fireLead);
+    };
+  }, [name, phone, dist, addr, email, cartItems]);
 
   const shipOptions = getShipOptions(dist);
 
@@ -376,8 +414,11 @@ export default function CheckoutPage() {
 
       // সফল — cart খালি করো, draft মুছো, guest হলে guest orders এ রাখো
       localStorage.setItem('vc_cart', '[]');
+      orderDoneRef.current = true; // stop the abandon-lead listener from firing after this
+      clearDraft(); // recovery-toast draft — order is complete, nothing left to recover
       try {
         sessionStorage.removeItem('vc_form_draft');
+        sessionStorage.removeItem('vc_lead_id');
         sessionStorage.setItem('vc_pending', insData.id);
         sessionStorage.setItem('vc_pending_num', num);
         localStorage.setItem('vc_last_order_time', String(Date.now()));
