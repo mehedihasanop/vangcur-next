@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import CartSidebar from './cart/CartSidebar';
 import WishlistDrawer from './cart/WishlistDrawer';
 import FloatCartBadge from './cart/FloatCartBadge';
+import FloatWishBadge from './cart/FloatWishBadge';
 import OfferPopup from './modals/OfferPopup';
 import OfferPageOverlay from './modals/OfferPageOverlay';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
@@ -54,6 +55,9 @@ export default function GlobalOverlays() {
       {/* 35-floating-cart-badge.html (2026-07-31) — see its own header note on why
           this is global (every route), diverging from legacy's SRP-hide behavior. */}
       <FloatCartBadge />
+      {/* 36-floating-wishlist-badge.html (2026-07-31) — same reasoning as
+          FloatCartBadge above; triggered by WISH_ADD_EVENT (lib/productData.js). */}
+      <FloatWishBadge />
       {/* 33-offer-popup-modal.html (2026-07-31) — self-contained: fetches its own
           config/products and runs its own auto-show timer, unlike CartSidebar/
           WishlistDrawer above which are opened by OPEN_CART_EVENT/OPEN_WISHLIST_EVENT. */}
