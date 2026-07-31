@@ -3,6 +3,7 @@ import Script from 'next/script';
 import VisitorTracker from './components/analytics/VisitorTracker';
 import QuickOrderBridge from './components/order/QuickOrderBridge';
 import GlobalOverlays from './components/GlobalOverlays';
+import ServiceWorkerRegister from './components/pwa/ServiceWorkerRegister';
 
 export const viewport = {
   width: 'device-width',
@@ -41,6 +42,10 @@ export const metadata = {
     images: ['https://res.cloudinary.com/dkjzleczw/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1779333775/quality_restoration_20260521091638399_e24mi5.jpg'],
   },
   manifest: '/manifest.json',
+  icons: {
+    icon: 'https://res.cloudinary.com/dkjzleczw/image/upload/w_192,h_192,c_fill,g_auto,q_auto,f_png/v1779333775/quality_restoration_20260521091638399_e24mi5.png',
+    apple: 'https://res.cloudinary.com/dkjzleczw/image/upload/w_192,h_192,c_fill,g_auto,q_auto,f_png/v1779333775/quality_restoration_20260521091638399_e24mi5.png',
+  },
   appleWebApp: {
     capable: true,
     title: 'Vangcur',
@@ -86,6 +91,8 @@ export default function RootLayout({ children }) {
             for QuickOrderBridge instead of adding QuickOrderBridge alongside it —
             visitor/analytics tracking has been silently broken since. Restored. */}
         <VisitorTracker />
+        {/* 37-pwa-service-worker.html — registers public/sw.js after load */}
+        <ServiceWorkerRegister />
         {children}
         <QuickOrderBridge />
         {/* BUG FIX (2026-07-31): see GlobalOverlays.js — toast/cart/wishlist now work
