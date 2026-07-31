@@ -1,6 +1,8 @@
 import './globals.css';
 import Script from 'next/script';
+import VisitorTracker from './components/analytics/VisitorTracker';
 import QuickOrderBridge from './components/order/QuickOrderBridge';
+import GlobalOverlays from './components/GlobalOverlays';
 
 export const viewport = {
   width: 'device-width',
@@ -79,8 +81,16 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        {/* ✅ Visitor tracking — no UI, fires once per app session (see lib/visitorTracking.js).
+            BUG FIX (2026-07-31): this got dropped from a commit that swapped it out
+            for QuickOrderBridge instead of adding QuickOrderBridge alongside it —
+            visitor/analytics tracking has been silently broken since. Restored. */}
+        <VisitorTracker />
         {children}
         <QuickOrderBridge />
+        {/* BUG FIX (2026-07-31): see GlobalOverlays.js — toast/cart/wishlist now work
+            on every route, not just the homepage. */}
+        <GlobalOverlays />
         {/* Microsoft Clarity */}
         <Script id="clarity" strategy="afterInteractive">
           {`(function(c,l,a,r,i,t,y){
