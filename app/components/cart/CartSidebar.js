@@ -41,11 +41,12 @@ import { showToast } from '@/lib/toast';
 //   component listens for QUICK_CART_EVENT (dispatched by ProductCard,
 //   SRPProductCard, WishlistDrawer) to actually call it, since those components
 //   only carry a product id, not the full stock-aware product record.
-// - _triggerCartJiggle()'s #floatCartBtn half is skipped: #floatCartBtn/
+// - _triggerCartJiggle()'s #floatCartBtn half is skipped here: #floatCartBtn/
 //   #floatCartCount belong to a floating cart button that isn't part of
-//   20-cart-sidebar.html and hasn't been built yet (FloatButtons.js today is
-//   WhatsApp/Messenger only). The #cartDot half (Navbar's cart icon) is wired
-//   in Navbar.js instead, which listens for CART_ADD_EVENT directly.
+//   20-cart-sidebar.html — it's app/components/cart/FloatCartBadge.js
+//   (35-floating-cart-badge.html, 2026-07-31), which listens for CART_ADD_EVENT
+//   itself. The #cartDot half (Navbar's cart icon) is wired in Navbar.js instead,
+//   which also listens for CART_ADD_EVENT directly.
 // Markup source: 20-cart-sidebar.html
 //
 // Note: stock numbers here come from one fetch on mount (defaults + custom_products),
