@@ -41,6 +41,16 @@ import WarrantyModal from '@/app/components/modals/WarrantyModal';
 // - renderRelated() (lines ~1290-1325) -> reuses app/components/home/ProductCard.js
 //   directly (identical prod-card markup + wishlist/cart/order behavior already
 //   built there), instead of re-implementing a second copy of the card here.
+// - 31-sticky-order-bar.html (verified 2026-07-31 against the official section
+//   extraction): the sticky bar itself was already built here from an earlier pass
+//   at 19-product-full-page.html, but had drifted from the extraction in 3 places,
+//   now fixed — (1) scroll-show threshold was comparing tabsWrap's position against
+//   plain 0 instead of legacy's `+70` (see the sticky-bar useEffect for why: .pp-nav
+//   is a 56-70px sticky header, so the tabs were hidden behind it for ~70px of
+//   scroll before the bar used to appear); (2) product name truncation was always
+//   45 chars, legacy uses 25 on mobile (isMobileWidth state added); (3) button
+//   order/label had drifted (Cart-then-Order instead of legacy's Order-then-Cart,
+//   and the cart button was missing its "কার্ট" label).
 // Markup source: 19-product-full-page.html extraction (this session)
 
 // Legacy: getCardSpecs()-style quick-spec picker, but keeps up to 6 entries and
@@ -198,6 +208,18 @@ export default function ProductDetailClient({ slug, initialId }) {
   const [wished, setWished] = useState(false);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
   const [stickyShown, setStickyShown] = useState(false);
+  // Bug fix (2026-07-31): legacy truncates the sticky bar's product name at 25
+  // chars on mobile (window.innerWidth <= 600) vs 45 on desktop — this was hardcoded
+  // to 45 always. CSS ellipsis (.pp-sticky-name{white-space:nowrap;overflow:hidden;
+  // text-overflow:ellipsis}) masked the visual difference somewhat, but this makes
+  // the JS-level truncation match legacy exactly.
+  const [isMobileWidth, setIsMobileWidth] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobileWidth(window.innerWidth <= 600);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [waLink, setWaLink] = useState(DEFAULT_WA_LINK);
   const [msgLink, setMsgLink] = useState(null);
 
@@ -240,13 +262,19 @@ export default function ProductDetailClient({ slug, initialId }) {
   }, []);
 
   // ── Sticky bottom bar — legacy compared tabsWrap's position against the
-  //    overlay's own bounding rect; the page now scrolls with `window`, so this
-  //    just checks whether the tabs bar has reached the top of the viewport. ──
+  //    overlay's own bounding rect (tabsRect.top <= overlayRect.top + 70); the
+  //    page now scrolls with `window` instead of an overlay, so the equivalent is
+  //    checking against the viewport top. Bug fix (2026-07-31, verified against
+  //    31-sticky-order-bar.html's official extraction): this was comparing against
+  //    plain `0` with no +70 offset — .pp-nav is `position: sticky; top: 0` (see
+  //    globals.css), roughly 56-70px tall, so the tabs bar was already hidden
+  //    behind it for ~70px of scroll before the sticky order bar appeared. Restored
+  //    the same +70 legacy used. ──
   useEffect(() => {
     const handler = () => {
       const el = tabsWrapRef.current;
       if (!el) return;
-      setStickyShown(el.getBoundingClientRect().top <= 0);
+      setStickyShown(el.getBoundingClientRect().top <= 70);
     };
     window.addEventListener('scroll', handler, { passive: true });
     handler();
@@ -601,7 +629,10 @@ export default function ProductDetailClient({ slug, initialId }) {
       <div className={'pp-sticky-bar' + (stickyShown ? ' show' : '')}>
         <div className="pp-sticky-inner">
           <div className="pp-sticky-name">
-            {prod.name.length > 45 ? prod.name.slice(0, 45) + '...' : prod.name}
+            {(() => {
+              const maxLen = isMobileWidth ? 25 : 45;
+              return prod.name.length > maxLen ? prod.name.slice(0, maxLen) + '...' : prod.name;
+            })()}
           </div>
           <div className="pp-sticky-price">
             ৳{(prod.price * qty).toLocaleString()}
@@ -613,8 +644,8 @@ export default function ProductDetailClient({ slug, initialId }) {
             </button>
           ) : (
             <>
-              <button className="pp-btn pp-btn-cart" style={{ width: 'auto', flexShrink: 0 }} onClick={addCartFromPP}>🛒</button>
               <button className="pp-btn pp-btn-order" style={{ width: 'auto', flexShrink: 0 }} onClick={orderNow}>⚡ অর্ডার করুন</button>
+              <button className="pp-btn pp-btn-cart pp-sticky-cart-btn" style={{ width: 'auto', flexShrink: 0 }} onClick={addCartFromPP}>🛒 কার্ট</button>
             </>
           )}
         </div>
