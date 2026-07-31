@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import CartSidebar from './cart/CartSidebar';
 import WishlistDrawer from './cart/WishlistDrawer';
+import OfferPopup from './modals/OfferPopup';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
 
 // Bug fix (2026-07-31): the `#toast` div + CartSidebar + WishlistDrawer used to be
@@ -48,6 +49,10 @@ export default function GlobalOverlays() {
       <div className="toast" id="toast"></div>
       <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <WishlistDrawer isOpen={wishOpen} onClose={() => setWishOpen(false)} />
+      {/* 33-offer-popup-modal.html (2026-07-31) — self-contained: fetches its own
+          config/products and runs its own auto-show timer, unlike CartSidebar/
+          WishlistDrawer above which are opened by OPEN_CART_EVENT/OPEN_WISHLIST_EVENT. */}
+      <OfferPopup />
     </>
   );
 }
