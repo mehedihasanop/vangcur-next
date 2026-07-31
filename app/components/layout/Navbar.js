@@ -3,10 +3,38 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import { CART_ADD_EVENT } from '@/lib/cartData';
+import {
+  DEFAULT_PRODS, fetchCustomProducts, mergeCustomProducts, productHref,
+} from '@/lib/productData';
+import { searchProducts } from '@/lib/searchData';
 
-// Note: the dropdown below fetches '/api/search', which doesn't exist in this
-// repo (no app/api/search route) — a pre-existing issue, out of scope here.
+// Bug fix (2026-07-31): the live search-as-you-type dropdown used to call
+// fetch('/api/search?q=...') — no such route exists anywhere in this repo (verified:
+// no app/api directory at all), so every keystroke 404'd and was swallowed by the
+// catch block, silently. The dropdown never showed a single result. Pressing Enter
+// (-> /srp, a real page with its own Supabase-backed product fetch) always worked
+// fine, so this went unnoticed. Replaced with the same client-side searchProducts()
+// lib/searchData.js already exports (used by /srp itself), fed by the same
+// DEFAULT_PRODS+custom_products fetch-once pattern CartSidebar.js/WishlistDrawer.js
+// use — no server route needed, matches how the rest of the product list already
+// works in this app. Also fixed while in here: results were rendered assuming a
+// `p.image_url` field that doesn't exist on this app's product shape (it's
+// `p.imgs[0]`, emoji-or-URL, same as every other product thumbnail in the app) and
+// linked to `/product/${p.id}` instead of the real productHref() slug.
+
+function SearchThumb({ imgVal }) {
+  const isUrl = typeof imgVal === 'string' && imgVal.startsWith('http');
+  if (isUrl) {
+    return <img src={imgVal} alt="" width={36} height={36} style={{ objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />;
+  }
+  return (
+    <span style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: 'var(--light)', borderRadius: 6, flexShrink: 0 }}>
+      {imgVal || '📦'}
+    </span>
+  );
+}
 
 export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWishClick, onLoginClick, onTrackClick, currentUser, onAccountClick }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -15,7 +43,20 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
   const cartBtnRef = useRef(null);
+  const prodsRef = useRef(DEFAULT_PRODS);
   const router = useRouter();
+
+  // Fetch product list once, for the search dropdown only (see note above)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const customRows = await fetchCustomProducts(supabase);
+      if (!cancelled && customRows.length) {
+        prodsRef.current = mergeCustomProducts(DEFAULT_PRODS, customRows);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Legacy: _triggerCartJiggle()'s `#cartDot` closest-button half (32-javascript-all.js
   // ~1108-1111) — the other half (#floatCartBtn) belongs to a floating cart button
@@ -34,7 +75,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     return () => window.removeEventListener(CART_ADD_EVENT, onCartAdd);
   }, []);
 
-  const handleSearchInput = useCallback(async (value) => {
+  const handleSearchInput = useCallback((value) => {
     setSearchQuery(value);
     if (!value.trim()) {
       setSearchResults([]);
@@ -42,17 +83,10 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
       return;
     }
     clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(value)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data.results || []);
-          setShowDropdown(true);
-        }
-      } catch (e) {
-        // silent fail
-      }
+    searchTimeoutRef.current = setTimeout(() => {
+      const results = searchProducts(prodsRef.current, value).slice(0, 6);
+      setSearchResults(results);
+      setShowDropdown(true);
     }, 280);
   }, []);
 
@@ -108,16 +142,14 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                   {searchResults.map(p => (
                     <Link
                       key={p.id}
-                      href={`/product/${p.id}`}
+                      href={productHref(p)}
                       className="search-result-item"
                       onClick={() => setShowDropdown(false)}
                     >
-                      {p.image_url && (
-                        <img src={p.image_url} alt={p.name} width={36} height={36} style={{ objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
-                      )}
+                      <SearchThumb imgVal={(p.imgs || [])[0]} />
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                        <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{p.price?.toLocaleString()}</div>
+                        <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{Number(p.price).toLocaleString()}</div>
                       </div>
                     </Link>
                   ))}
@@ -200,16 +232,14 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
               {searchResults.map(p => (
                 <Link
                   key={p.id}
-                  href={`/product/${p.id}`}
+                  href={productHref(p)}
                   className="search-result-item"
                   onClick={() => { setShowDropdown(false); setMobileSearchOpen(false); }}
                 >
-                  {p.image_url && (
-                    <img src={p.image_url} alt={p.name} width={36} height={36} style={{ objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
-                  )}
+                  <SearchThumb imgVal={(p.imgs || [])[0]} />
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                    <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{p.price?.toLocaleString()}</div>
+                    <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{Number(p.price).toLocaleString()}</div>
                   </div>
                 </Link>
               ))}
