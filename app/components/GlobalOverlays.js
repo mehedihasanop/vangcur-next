@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import CartSidebar from './cart/CartSidebar';
 import WishlistDrawer from './cart/WishlistDrawer';
 import OfferPopup from './modals/OfferPopup';
+import OfferPageOverlay from './modals/OfferPageOverlay';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
 
 // Bug fix (2026-07-31): the `#toast` div + CartSidebar + WishlistDrawer used to be
@@ -53,6 +54,10 @@ export default function GlobalOverlays() {
           config/products and runs its own auto-show timer, unlike CartSidebar/
           WishlistDrawer above which are opened by OPEN_CART_EVENT/OPEN_WISHLIST_EVENT. */}
       <OfferPopup />
+      {/* 34-offer-page-overlay.html (2026-07-31) — self-contained like OfferPopup,
+          but opens via OPEN_OFFER_PAGE_EVENT (Footer.js's "📢 চলতি অফারসমূহ" button,
+          already dispatching into the void until now) instead of a timer. */}
+      <OfferPageOverlay />
     </>
   );
 }
