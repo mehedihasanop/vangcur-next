@@ -34,7 +34,8 @@ import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT, OPEN_TRACK_ORDER_EVENT } from '@/
 // import OfferPopup from './components/modals/OfferPopup';
 // import StockNotifyModal from './components/modals/StockNotifyModal';
 // import MembershipModal from './components/modals/MembershipModal';
-// import RecoveryToast from './components/modals/RecoveryToast';
+// RecoveryToast.js is built (2026-07-31) — mounted in GlobalOverlays.js instead,
+// not here (needs to run on every route, not just the homepage).
 // import BackInStockToast from './components/modals/BackInStockToast';
 
 export default function ClientHome() {
