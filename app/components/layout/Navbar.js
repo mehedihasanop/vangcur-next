@@ -59,8 +59,9 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   }, []);
 
   // Legacy: _triggerCartJiggle()'s `#cartDot` closest-button half (32-javascript-all.js
-  // ~1108-1111) — the other half (#floatCartBtn) belongs to a floating cart button
-  // that isn't part of any section built yet, so it's skipped; see CartSidebar.js note.
+  // ~1108-1111) — the other half (#floatCartBtn) now lives in
+  // app/components/cart/FloatCartBadge.js (35-floating-cart-badge.html, 2026-07-31),
+  // mirroring this exact ref+classList+reflow technique.
   useEffect(() => {
     const onCartAdd = () => {
       const btn = cartBtnRef.current;
