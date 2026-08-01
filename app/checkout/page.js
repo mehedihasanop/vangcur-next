@@ -84,7 +84,6 @@ export default function CheckoutPage() {
 
   // Submit state
   const [submitting, setSubmitting] = useState(false);
-  const [orderResult, setOrderResult] = useState(null); // { num, isGuest }
   const confirmLockRef = useRef(false);
 
   // 24-pre-confirm-login.html state
@@ -419,8 +418,12 @@ export default function CheckoutPage() {
       try {
         sessionStorage.removeItem('vc_form_draft');
         sessionStorage.removeItem('vc_lead_id');
-        sessionStorage.setItem('vc_pending', insData.id);
-        sessionStorage.setItem('vc_pending_num', num);
+        // এই তিনটা key WaitingPage.js-এর openWait()/মাউন্ট-restore effect যা লেখে/পড়ে
+        // ঠিক তার সাথে হুবহু মিলিয়ে — home-এ redirect করার পর WaitingPage নিজে থেকেই
+        // এই order-টা ধরে waiting overlay খুলে ফেলবে, আলাদা কোনো event dispatch লাগে না।
+        localStorage.setItem('vc_pending_ls', insData.id);
+        localStorage.setItem('vc_pending_num_ls', num);
+        localStorage.setItem('vc_pending_ts', String(Date.now()));
         localStorage.setItem('vc_last_order_time', String(Date.now()));
       } catch (e) {}
       if (!currentUserId) {
@@ -431,8 +434,7 @@ export default function CheckoutPage() {
         } catch (e) {}
       }
 
-      setOrderResult({ num, isGuest: !currentUserId });
-      setSubmitting(false);
+      router.push('/');
     } catch (e) {
       console.error('Order confirm failed:', e);
       setSubmitting(false);
@@ -480,30 +482,10 @@ export default function CheckoutPage() {
 
   const closeCheckout = () => router.push('/');
 
-  // ── অর্ডার সফল হওয়ার পর — অস্থায়ী inline "pending" কার্ড (section 25 তৈরি হলে replace হবে) ──
-  if (orderResult) {
-    return (
-      <div className="order-overlay show">
-        <div className="order-box" style={{ padding: '40px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>⏳</div>
-          <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>আপনার অর্ডার গ্রহণ করা হয়েছে</h2>
-          <p style={{ fontSize: '14px', color: '#555', marginBottom: '18px' }}>
-            অর্ডার নম্বর: <strong>{orderResult.num}</strong>
-            <br />
-            পেমেন্ট যাচাই করে শীঘ্রই কনফার্মেশন জানানো হবে।
-          </p>
-          {orderResult.isGuest && (
-            <p style={{ fontSize: '12.5px', color: '#888', marginBottom: '18px' }}>
-              আপনি গেস্ট হিসেবে অর্ডার করেছেন — অর্ডার ট্র্যাক করতে ফোন নম্বর মনে রাখুন।
-            </p>
-          )}
-          <button className="btn-next" onClick={closeCheckout}>
-            হোমে ফিরুন
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // অর্ডার সফল হলে submitOrderNow() সরাসরি router.push('/') করে দেয় — homepage-এ
+  // ইতিমধ্যে মাউন্ট করা WaitingPage.js সেই order-টা localStorage থেকে ধরে নিয়ে
+  // waiting overlay খুলে ফেলে (দেখো ওপরে vc_pending_ls/_num_ls/_ts লেখার জায়গা)।
+  // তাই এখানে আর আলাদা কোনো "pending" কার্ড রাখার দরকার নেই।
 
   return (
     <>
