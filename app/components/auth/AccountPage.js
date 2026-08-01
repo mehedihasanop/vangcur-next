@@ -160,12 +160,29 @@ export default function AccountPage({ isOpen, onClose, currentUser, onAddAccount
     await deleteAllDrafts(supabase, currentUser);
     setDrafts([]);
   };
-  // Legacy: continueFromDraft()/continueRecoveryOrder() — 23-order-overlay.html
-  // (OrderForm.js) isn't built yet, so this just closes + dispatches; OrderForm can
-  // add a listener for this later without touching this file.
+  // Legacy: continueFromDraft()/continueRecoveryOrder() — 23-order-overlay.html.
+  // Fix (2026-08-01 audit): this used to just dispatch 'vc:continueDraftOrder' with no
+  // listener anywhere — a dead button (see uiEvents.js audit note). Checkout already has
+  // two restore mechanisms on mount: sessionStorage 'vc_form_draft' (name/phone/dist/addr/
+  // email/txn/l4) and sessionStorage 'vc_quick_order_items' (one-time cart override, same
+  // key QuickOrderBridge uses). Writing to both here lets /checkout's existing mount logic
+  // pick everything up automatically — no changes needed in checkout/page.js.
   const continueFromDraft = (draft) => {
+    try {
+      if (Array.isArray(draft.items) && draft.items.length) {
+        sessionStorage.setItem('vc_quick_order_items', JSON.stringify(draft.items));
+      }
+      sessionStorage.setItem('vc_form_draft', JSON.stringify({
+        name: draft.name || '', phone: draft.phone || '', dist: draft.dist || '',
+        addr: draft.addr || '', email: draft.email || '',
+      }));
+      if (draft.ship) sessionStorage.setItem('vc_ship', draft.ship);
+    } catch (e) {
+      // sessionStorage full/blocked — checkout will still open with an empty form,
+      // which is strictly better than the previous no-op dead button.
+    }
     onClose();
-    window.dispatchEvent(new CustomEvent('vc:continueDraftOrder', { detail: { draft } }));
+    router.push('/checkout');
   };
 
   const openInvoice = (orderId) => window.dispatchEvent(new CustomEvent(GENERATE_INVOICE_EVENT, { detail: { orderId, ctx: 'acc' } }));
