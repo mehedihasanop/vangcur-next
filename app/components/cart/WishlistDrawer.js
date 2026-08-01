@@ -87,6 +87,12 @@ export default function WishlistDrawer({ isOpen, onClose }) {
     router.push(productHref(item));
   };
 
+  // Empty-state CTA (audit fix) — same pattern as CartSidebar's goToProducts.
+  const goToProducts = () => {
+    onClose();
+    document.getElementById('prodSec')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const addToCart = (id) => {
     window.dispatchEvent(new CustomEvent(QUICK_CART_EVENT, { detail: { id } }));
     showToast('✅ কার্টে যোগ হয়েছে');
@@ -113,7 +119,17 @@ export default function WishlistDrawer({ isOpen, onClose }) {
           {items.length === 0 ? (
             <div className="wl-empty">
               <div style={{ fontSize: 44, marginBottom: 10 }}>🤍</div>
-              <p>আপনার Wishlist খালি</p>
+              <p style={{ marginBottom: 16 }}>আপনার Wishlist খালি</p>
+              <button
+                onClick={goToProducts}
+                style={{
+                  background: 'var(--dark)', color: '#fff', border: 'none', padding: '10px 22px',
+                  borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'DM Sans',sans-serif",
+                }}
+              >
+                প্রোডাক্ট দেখুন →
+              </button>
             </div>
           ) : (
             items.map((item) => (
