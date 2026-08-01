@@ -2366,3 +2366,33 @@ nav.nav-intro-anim{animation:navIntroScaleIn .65s ease both;transform-origin:cen
   .nav-search>svg{transition:transform .6s cubic-bezier(.4,0,.2,1)}
   .nav-search .sp-text-d{position:absolute;left:40px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--gray);white-space:nowrap;overflow:hidden;pointer-events:none;background:var(--light);right:14px}
 }
+
+/* === INVOICE PAGE (dlInvoiceById/genInvoice — 32-javascript-all.js ~9399-9484) ===
+   Legacy generated this as an inline <style> block inside a full standalone HTML
+   string (window.open target), then extracted+reused it inside #invoiceModal.
+   Ported verbatim here since InvoiceModal.js renders it as JSX directly instead of
+   building/parsing an HTML string. */
+.invoice-wrap{max-width:620px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 4px 32px rgba(0,0,0,.10);overflow:hidden;position:relative}
+.inv-body{padding:32px 30px 28px}
+.inv-body .hdr{text-align:center;border-bottom:2px solid #f0f0f0;padding-bottom:20px;margin-bottom:22px}
+.inv-body .brand-name{font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#1a1a1a}
+.inv-body .brand-sub{font-size:10px;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-top:2px;margin-bottom:10px}
+.inv-body .badge{background:#E63946;color:#fff;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block;letter-spacing:1px}
+.inv-body .order-meta{margin-top:12px;font-size:12.5px;color:#555}
+.inv-body .section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#999;margin-bottom:10px}
+.inv-body .info-card{background:#f8f9fb;border:1px solid #eee;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:2}
+.inv-body .info-card strong{color:#333;min-width:70px;display:inline-block}
+.inv-body .prod-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.inv-body .prod-table th{background:#f8f9fb;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;padding:9px 10px;text-align:left;border-bottom:2px solid #eee}
+.inv-body .prod-table td{padding:10px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+.inv-body .prod-table tr:last-child td{border-bottom:none}
+.inv-body .totals-box{background:#f8f9fb;border-radius:10px;border:1px solid #eee;padding:14px 16px;margin-bottom:16px}
+.inv-body .total-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#444;border-bottom:1px solid #eee}
+.inv-body .total-row:last-child{border-bottom:none}
+.inv-body .total-row.grand{font-weight:800;font-size:15px;color:#1a1a1a;padding-top:10px}
+.inv-body .total-row.paid{color:#10B981;font-weight:600}
+.inv-body .total-row.balance{color:#E63946;font-weight:700;font-size:14px}
+.inv-body .payment-badge{display:inline-flex;align-items:center;gap:6px;background:#e6f7ef;color:#065f46;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;margin-bottom:20px}
+.inv-body .footer-note{margin-top:0;font-size:11.5px;color:#888;text-align:center;line-height:2;border-top:1px solid #f0f0f0;padding-top:16px}
+@media print{.invoice-wrap{box-shadow:none;border-radius:0}}
+@media(max-width:600px){.invoice-wrap{border-radius:0;box-shadow:none;max-width:100%}}
