@@ -32,11 +32,9 @@ import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT, OPEN_TRACK_ORDER_EVENT } from '@/
 // import PreConfirmLogin from './components/order/PreConfirmLogin';
 // import WarrantyModal from './components/modals/WarrantyModal';
 // import OfferPopup from './components/modals/OfferPopup';
-// import StockNotifyModal from './components/modals/StockNotifyModal';
 // import MembershipModal from './components/modals/MembershipModal';
 // RecoveryToast.js is built (2026-07-31) — mounted in GlobalOverlays.js instead,
 // not here (needs to run on every route, not just the homepage).
-// import BackInStockToast from './components/modals/BackInStockToast';
 
 export default function ClientHome() {
   // Bug fix (2026-07-31), updated: CartSidebar.js/WishlistDrawer.js are no longer
