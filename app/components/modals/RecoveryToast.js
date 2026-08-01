@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { eligibleDraft, dismissDraft } from '@/lib/draftRecovery';
+import { waitForBisDecision, isSlotTaken, claimSlot } from '@/lib/notificationQueue';
 
 // Converted from 38-abandoned-draft-recovery-toast.html + its matched JS
 // (32-javascript-all.js: triggerDraftRecoveryToast/_showToastIfEligible
@@ -18,6 +19,12 @@ import { eligibleDraft, dismissDraft } from '@/lib/draftRecovery';
 // for the cart (same key QuickOrderBridge.js uses) and vc_form_draft/vc_ship
 // for the rest — then navigates there. No changes needed to checkout/page.js's
 // existing restore effect.
+//
+// Mutual exclusivity with BackInStockToast.js (2026-08-01): legacy's single
+// _scheduleNotificationToasts() only ever showed this after confirming the
+// back-in-stock toast (41-back-in-stock-toast.html) had nothing to show. See
+// lib/notificationQueue.js's header for how that ordering is preserved now that
+// each toast is its own self-scheduling component.
 export default function RecoveryToast() {
   const [draft, setDraft] = useState(null);
   const [closing, setClosing] = useState(false);
@@ -26,11 +33,20 @@ export default function RecoveryToast() {
 
   useEffect(() => {
     if (pathname === '/checkout') return; // legacy: never show mid-order
+    let cancelled = false;
     const timer = setTimeout(() => {
-      const d = eligibleDraft();
-      if (d) setDraft(d);
+      // legacy: _scheduleNotificationToasts only ran this after _tryShowBISToast()
+      // returned false — wait for BackInStockToast.js's decision before proceeding.
+      waitForBisDecision().then(() => {
+        if (cancelled || isSlotTaken()) return;
+        const d = eligibleDraft();
+        if (d && claimSlot('recovery')) setDraft(d);
+      });
     }, 4000); // legacy: _scheduleNotificationToasts delay
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [pathname]);
 
   const close = useCallback(
