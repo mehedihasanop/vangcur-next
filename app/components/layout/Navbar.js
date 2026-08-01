@@ -23,16 +23,47 @@ import { searchProducts } from '@/lib/searchData';
 // `p.image_url` field that doesn't exist on this app's product shape (it's
 // `p.imgs[0]`, emoji-or-URL, same as every other product thumbnail in the app) and
 // linked to `/product/${p.id}` instead of the real productHref() slug.
+//
+// Bug fix #2 (2026-08-01): that same fix still didn't actually show anything, for a
+// second, unrelated reason — globals.css's `.search-dropdown{...display:none}` rule
+// only gets overridden by a separate `.search-dropdown.show{display:block}` rule
+// (verified by grep), but the dropdown <div> here only ever had className=
+// "search-dropdown" — never "show" — so it stayed display:none even while correctly
+// mounted in the DOM with real results inside it. Also, the items themselves were
+// rendered with a `search-result-item` class that doesn't exist anywhere in
+// globals.css (grepped: zero matches) and a hand-rolled SearchThumb with inline
+// styles instead of the real `.sd-emoji` class — so even once visible, they'd have
+// rendered with no padding/hover/sizing at all. Both dropdowns below now use the
+// actual legacy classes (.sd-header/.sd-item/.sd-emoji/.sd-info/.sd-name/.sd-meta/
+// .sd-price/.sd-footer/.search-highlight), all verified present in globals.css, plus
+// the "সব দেখুন" header link and footer button legacy's showSearchDropdown() has
+// (32-javascript-all.js reference upload, lines ~6324-6520) — item highlighting
+// included, category suggestions intentionally left out to keep this fix scoped.
 
 function SearchThumb({ imgVal }) {
-  const isUrl = typeof imgVal === 'string' && imgVal.startsWith('http');
-  if (isUrl) {
-    return <img src={imgVal} alt="" width={36} height={36} style={{ objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />;
-  }
+  const isUrl = typeof imgVal === 'string' && (imgVal.startsWith('http://') || imgVal.startsWith('https://'));
   return (
-    <span style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: 'var(--light)', borderRadius: 6, flexShrink: 0 }}>
-      {imgVal || '📦'}
-    </span>
+    <div className="sd-emoji">
+      {isUrl
+        ? <img src={imgVal} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />
+        : <span style={{ fontSize: 24 }}>{imgVal || '📦'}</span>}
+    </div>
+  );
+}
+
+// Legacy: highlight(text, q) (32-javascript-all.js's showSearchDropdown, reference
+// upload ~6371-6380) — wraps the first matching substring in .search-highlight,
+// truncating long text around the match instead of always from the start.
+function highlightMatch(text, q) {
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text.length > 45 ? text.slice(0, 45) + '...' : text;
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + q.length);
+  const after = text.slice(idx + q.length);
+  const truncBefore = before.length > 20 ? '...' + before.slice(-20) : before;
+  const truncAfter = after.length > 25 ? after.slice(0, 25) + '...' : after;
+  return (
+    <>{truncBefore}<span className="search-highlight">{match}</span>{truncAfter}</>
   );
 }
 
@@ -93,15 +124,18 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
 
   // Legacy: viewAllSearch(q) -> openSRP(q) (32-javascript-all.js ~2978-2990) —
   // /srp is a real page here (owner's decision), so this is a real navigation
+  const goToSrp = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setShowDropdown(false);
+    setMobileSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    router.push(`/srp?q=${encodeURIComponent(q)}`);
+  };
+
   const handleSearchKey = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      const q = searchQuery.trim();
-      setShowDropdown(false);
-      setMobileSearchOpen(false);
-      setSearchQuery('');
-      setSearchResults([]);
-      router.push(`/srp?q=${encodeURIComponent(q)}`);
-    }
+    if (e.key === 'Enter' && searchQuery.trim()) goToSrp();
   };
 
   useEffect(() => {
@@ -138,22 +172,38 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                 name="product-search"
                 style={{ cursor: 'text' }}
               />
-              {showDropdown && searchResults.length > 0 && (
-                <div className="search-dropdown" id="desktopSearchDropdown">
-                  {searchResults.map(p => (
-                    <Link
-                      key={p.id}
-                      href={productHref(p)}
-                      className="search-result-item"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      <SearchThumb imgVal={(p.imgs || [])[0]} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                        <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{Number(p.price).toLocaleString()}</div>
+              {showDropdown && (
+                <div className="search-dropdown show" id="desktopSearchDropdown">
+                  {searchResults.length === 0 ? (
+                    <div className="sd-empty">🔍 "<strong>{searchQuery}</strong>" এর জন্য কোনো পণ্য পাওয়া যায়নি</div>
+                  ) : (
+                    <>
+                      <div className="sd-header">
+                        <span>{searchResults.length}টি পণ্য পাওয়া গেছে</span>
+                        <a className="sd-view-all" onClick={() => goToSrp()}>সব দেখুন →</a>
                       </div>
-                    </Link>
-                  ))}
+                      {searchResults.map(p => (
+                        <Link
+                          key={p.id}
+                          href={productHref(p)}
+                          className="sd-item"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <SearchThumb imgVal={(p.imgs || [])[0]} />
+                          <div className="sd-info">
+                            <div className="sd-name">{highlightMatch(p.name, searchQuery)}</div>
+                            <div className="sd-meta">{p.cat}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
+                          </div>
+                          <div className="sd-price">৳{Number(p.price).toLocaleString()}</div>
+                        </Link>
+                      ))}
+                      <div className="sd-footer">
+                        <button className="sd-view-all-btn" onClick={() => goToSrp()}>
+                          🔍 &quot;{searchQuery}&quot; এর সব ফলাফল দেখুন
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -232,22 +282,38 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
               title="মুছুন"
             >✕</button>
           )}
-          {showDropdown && searchResults.length > 0 && (
-            <div className="search-dropdown" id="mobileSearchDropdown">
-              {searchResults.map(p => (
-                <Link
-                  key={p.id}
-                  href={productHref(p)}
-                  className="search-result-item"
-                  onClick={() => { setShowDropdown(false); setMobileSearchOpen(false); }}
-                >
-                  <SearchThumb imgVal={(p.imgs || [])[0]} />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                    <div style={{ color: 'var(--red)', fontSize: 12 }}>৳{Number(p.price).toLocaleString()}</div>
+          {showDropdown && (
+            <div className="search-dropdown show" id="mobileSearchDropdown">
+              {searchResults.length === 0 ? (
+                <div className="sd-empty">🔍 "<strong>{searchQuery}</strong>" এর জন্য কোনো পণ্য পাওয়া যায়নি</div>
+              ) : (
+                <>
+                  <div className="sd-header">
+                    <span>{searchResults.length}টি পণ্য পাওয়া গেছে</span>
+                    <a className="sd-view-all" onClick={() => goToSrp()}>সব দেখুন →</a>
                   </div>
-                </Link>
-              ))}
+                  {searchResults.map(p => (
+                    <Link
+                      key={p.id}
+                      href={productHref(p)}
+                      className="sd-item"
+                      onClick={() => { setShowDropdown(false); setMobileSearchOpen(false); }}
+                    >
+                      <SearchThumb imgVal={(p.imgs || [])[0]} />
+                      <div className="sd-info">
+                        <div className="sd-name">{highlightMatch(p.name, searchQuery)}</div>
+                        <div className="sd-meta">{p.cat}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
+                      </div>
+                      <div className="sd-price">৳{Number(p.price).toLocaleString()}</div>
+                    </Link>
+                  ))}
+                  <div className="sd-footer">
+                    <button className="sd-view-all-btn" onClick={() => goToSrp()}>
+                      🔍 &quot;{searchQuery}&quot; এর সব ফলাফল দেখুন
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
