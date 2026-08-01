@@ -4,8 +4,10 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
-  DEFAULT_PRODS, QUICK_ORDER_EVENT, fetchCustomProducts, mergeCustomProducts,
+  DEFAULT_PRODS, QUICK_ORDER_EVENT, QUICK_ORDER_MODAL_EVENT, fetchCustomProducts, mergeCustomProducts,
 } from '@/lib/productData';
+import { getCart, addToCart } from '@/lib/cartData';
+import { showToast } from '@/lib/toast';
 
 // Fixes a real bug: ProductCard.js, ProductDetailClient.js, SRPProductCard.js, and
 // WishlistDrawer.js's "⚡ অর্ডার করুন" / "এখনই অর্ডার করুন" buttons all dispatch
@@ -33,6 +35,16 @@ import {
 // CartSidebar.js with a router.push('/checkout') — no bridge component needed
 // there, since the full cart is already persisted to the 'vc_cart' localStorage
 // key that /checkout's mount effect reads as its fallback.
+//
+// UPDATE (2026-08-01): the empty-cart branch above was the whole story until now,
+// but legacy's orderNow()/quickOrder() (32-javascript-all.js ~7691-7715, ~7746-7769)
+// actually branch on `cart.length>0`: if the cart already had something in it
+// *before* this click, legacy merges the new product into that cart and shows
+// showQuickOrderModal() (the "🛒 শপিং কার্ট" bottom sheet — see QuickOrderModal.js)
+// instead of skipping straight to the order page. Only a genuinely empty cart takes
+// the direct-to-checkout shortcut below. This distinction was missing entirely —
+// every "অর্ডার করুন" click always took the empty-cart shortcut, silently dropping
+// whatever was already in the cart from the one-time vc_quick_order_items key.
 
 export default function QuickOrderBridge() {
   const router = useRouter();
@@ -55,6 +67,15 @@ export default function QuickOrderBridge() {
       if (id === undefined) return;
       const prod = prodsRef.current.find((p) => String(p.id) === String(id));
       if (!prod || prod.stock <= 0) return;
+
+      // Legacy: `if(cart.length>0){...push/merge...;showQuickOrderModal();}`
+      const existingCart = getCart();
+      if (existingCart.length > 0) {
+        const res = addToCart(prodsRef.current, id, qty || 1);
+        if (!res.ok && res.reason === 'stock') { showToast('❌ স্টক শেষ!'); return; }
+        window.dispatchEvent(new CustomEvent(QUICK_ORDER_MODAL_EVENT));
+        return;
+      }
 
       // Legacy: orderItems=[{...curProd,qty:curQty,emoji:(curProd.imgs||['📦'])[0]}]
       const item = { ...prod, qty: qty || 1, emoji: (prod.imgs || ['📦'])[0] };
