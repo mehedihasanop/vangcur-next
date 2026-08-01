@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import {
-  DEFAULT_WA_LINK, computeWaLink, computeMsgLink,
+  DEFAULT_WA_LINK, DEFAULT_MSG_LINK, computeWaLink, computeMsgLink,
   fetchContactSettings, subscribeContactSettings,
 } from '@/lib/floatButtonsData';
 
@@ -27,14 +27,25 @@ import {
 
 export default function FloatButtons() {
   const [waLink, setWaLink] = useState(DEFAULT_WA_LINK);
-  const [msgLink, setMsgLink] = useState(null);
+  // BUG FIX (2026-08-01): this used to start at `null` and only ever got set
+  // inside `if (cancelled || !contact) return;` below — so if vc_contact's
+  // initial fetch ever came back null (row missing, query error, RLS hiccup),
+  // computeMsgLink() was never even called and the button stayed permanently
+  // hidden, regardless of what computeMsgLink() itself returns. Starting from
+  // DEFAULT_MSG_LINK (same pattern as waLink/DEFAULT_WA_LINK) means the button
+  // always shows something correct immediately, refined later only if/when
+  // vc_contact.messenger overrides it.
+  const [msgLink, setMsgLink] = useState(DEFAULT_MSG_LINK);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       const contact = await fetchContactSettings(supabase);
-      if (cancelled || !contact) return;
+      if (cancelled) return;
+      // No `|| !contact` guard here anymore — computeWaLink()/computeMsgLink()
+      // already fall back to their defaults for a null/empty contact, so this
+      // now self-heals instead of freezing at the initial state forever.
       setWaLink(computeWaLink(contact));
       setMsgLink(computeMsgLink(contact));
     })();
