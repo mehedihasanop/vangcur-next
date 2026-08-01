@@ -9,13 +9,14 @@ import { productHref, WISHLIST_EVENT } from '@/lib/productData';
 import {
   saveCurrentUser, logout, getLinkedAccounts, switchToAccount,
 } from '@/lib/authData';
-import { OPEN_MEMBERSHIP_EVENT, OPEN_INVOICE_EVENT } from '@/lib/uiEvents';
+import { OPEN_MEMBERSHIP_EVENT, GENERATE_INVOICE_EVENT } from '@/lib/uiEvents';
 import {
   computeCelestialState, fetchIsRaining, formatLiveTimeDate, getGreeting,
   fetchMyOrders, orderStats, updateProfileName,
   getStockNotifications, removeStockNotification, clearAllStockNotifications,
   fetchDrafts, deleteDraft, deleteAllDrafts,
 } from '@/lib/accountData';
+import { getTier, tierIconSVG, crownSVG } from '@/lib/membershipData';
 
 // Converted from 32-javascript-all.js — see lib/accountData.js's header for the
 // per-function line references; this file is the JSX + component state that drives
@@ -167,8 +168,9 @@ export default function AccountPage({ isOpen, onClose, currentUser, onAddAccount
     window.dispatchEvent(new CustomEvent('vc:continueDraftOrder', { detail: { draft } }));
   };
 
-  const openInvoice = (orderId) => window.dispatchEvent(new CustomEvent(OPEN_INVOICE_EVENT, { detail: { orderId } }));
-  const openMembership = () => window.dispatchEvent(new CustomEvent(OPEN_MEMBERSHIP_EVENT));
+  const openInvoice = (orderId) => window.dispatchEvent(new CustomEvent(GENERATE_INVOICE_EVENT, { detail: { orderId, ctx: 'acc' } }));
+  const currentTier = getTier(stats.completed);
+  const openMembership = () => window.dispatchEvent(new CustomEvent(OPEN_MEMBERSHIP_EVENT, { detail: { completedCount: stats.completed } }));
 
   return (
     <div className={`acc-page${isOpen ? ' show' : ''}`} id="accPage">
@@ -251,7 +253,10 @@ export default function AccountPage({ isOpen, onClose, currentUser, onAddAccount
 
               <div className="profile-content">
                 <div className="profile-header" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="avatar-wrap"><div className="profile-avatar">{initials}</div></div>
+                  <div className="avatar-wrap">
+                    <div className="profile-avatar">{initials}</div>
+                    {currentTier.crown && <span dangerouslySetInnerHTML={{ __html: crownSVG(currentTier.crown) }} />}
+                  </div>
                   <div className="acc-profile-info">
                     <div className="acc-name-txt">{currentUser.name || '-'}</div>
                     <div className="acc-email-txt">{currentUser.email || '-'}</div>
@@ -322,8 +327,8 @@ export default function AccountPage({ isOpen, onClose, currentUser, onAddAccount
               </div>
               <div className="stat-box" style={{ padding: '9px 4px 6px', cursor: 'pointer' }} onClick={openMembership}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '2px 0' }}>
-                  <div style={{ fontSize: 18 }}>👤</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#78350F', fontFamily: "'DM Sans',sans-serif" }}>সাধারণ</div>
+                  <div style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }} dangerouslySetInnerHTML={{ __html: tierIconSVG(currentTier.key) }} />
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '-0.2px', fontFamily: "'DM Sans',sans-serif", ...(currentTier.key === 'silver' ? { color: '#475569' } : currentTier.key === 'gold' ? { color: '#92400E' } : currentTier.key === 'diamond' ? { color: '#1E40AF' } : { color: '#78350F' }) }}>{currentTier.bn}</div>
                   <div className="stat-lbl" style={{ marginTop: 0, fontSize: 8.5 }}>মেম্বারশিপ</div>
                 </div>
               </div>
