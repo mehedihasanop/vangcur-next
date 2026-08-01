@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { lockBody, unlockBody } from '@/lib/bodyScrollLock';
-import { DEFAULT_PRODS } from '@/lib/productData';
+import { DEFAULT_PRODS, fetchCustomProducts, mergeCustomProducts } from '@/lib/productData';
 import {
   getCurrentUser, saveCurrentUser, checkOAuthCallback, mergeGuestOrdersToUser, signInWithGoogle,
 } from '@/lib/authData';
@@ -350,7 +350,7 @@ export default function CheckoutPage() {
         if (rl.data === false) {
           setSubmitting(false);
           confirmLockRef.current = false;
-          alert('একটু অপেক্ষা করুন, তারপর আবার চেষ্টা করুন');
+          showToast('⏳ একটু অপেক্ষা করুন, তারপর আবার চেষ্টা করুন');
           return;
         }
       } catch (e) {
@@ -358,7 +358,7 @@ export default function CheckoutPage() {
         if (Date.now() - lastOrderTime < 30000) {
           setSubmitting(false);
           confirmLockRef.current = false;
-          alert('একটু অপেক্ষা করুন, তারপর আবার চেষ্টা করুন');
+          showToast('⏳ একটু অপেক্ষা করুন, তারপর আবার চেষ্টা করুন');
           return;
         }
       }
@@ -372,9 +372,25 @@ export default function CheckoutPage() {
         // fallback already set above
       }
 
-      // S-5/S-6: verify prices against authoritative product list (ignore tampered cart prices)
+      // S-5/S-6: verify prices against authoritative product list (ignore tampered cart prices).
+      // Bug fix (2026-08-01 audit): this used to check DEFAULT_PRODS only — legacy's PRODS
+      // array is DEFAULT_PRODS + Supabase custom_products merged together (see
+      // mergeCustomProducts()/productData.js's push-on-realtime-insert comment), so any
+      // cart item that was a custom (admin-added, not hardcoded) product silently fell
+      // through to the unverified `: i` branch, letting a tampered client-side price reach
+      // the order insert. Fetching + merging custom products here (fresh, not from stale
+      // component state) closes that gap the same way legacy's authoritative PRODS did.
+      let authoritativeProds = DEFAULT_PRODS;
+      try {
+        const customRows = await fetchCustomProducts(supabase);
+        if (customRows.length) authoritativeProds = mergeCustomProducts(DEFAULT_PRODS, customRows);
+      } catch (e) {
+        // fetchCustomProducts already retries internally and returns [] on failure —
+        // falling back to DEFAULT_PRODS-only verification is still safe (never trusts
+        // the raw cart price), just narrower than legacy's merged list in this edge case.
+      }
       const verifiedItems = cartItems.map((i) => {
-        const prod = DEFAULT_PRODS.find((p) => p.id === i.id);
+        const prod = authoritativeProds.find((p) => String(p.id) === String(i.id));
         return prod ? { ...i, price: prod.price, name: prod.name, emoji: (prod.imgs || ['📦'])[0] } : i;
       });
       const vSub = verifiedItems.reduce((s, i) => s + i.price * i.qty, 0);
@@ -410,7 +426,7 @@ export default function CheckoutPage() {
         console.error('[Order Insert] FAILED —', insErr);
         setSubmitting(false);
         confirmLockRef.current = false;
-        alert('দুঃখিত, অর্ডার সেভ করা যায়নি। আবার চেষ্টা করুন।');
+        showToast('❌ দুঃখিত, অর্ডার সেভ করা যায়নি। আবার চেষ্টা করুন।');
         return;
       }
 
@@ -442,7 +458,7 @@ export default function CheckoutPage() {
       console.error('Order confirm failed:', e);
       setSubmitting(false);
       confirmLockRef.current = false;
-      alert('দুঃখিত, একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      showToast('❌ নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
   }, [phone, cartItems, sc, name, dist, addr, email, selectedShip, txn, last4]);
 
