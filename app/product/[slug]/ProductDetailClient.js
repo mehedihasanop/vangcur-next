@@ -12,7 +12,7 @@ import {
 import { fetchProductDetail } from '@/lib/productDetailData';
 import { trackProductView } from '@/lib/visitorTracking';
 import {
-  DEFAULT_WA_LINK, computeWaLink, computeMsgLink, fetchContactSettings, subscribeContactSettings,
+  DEFAULT_WA_LINK, DEFAULT_MSG_LINK, computeWaLink, computeMsgLink, fetchContactSettings, subscribeContactSettings,
 } from '@/lib/floatButtonsData';
 import { showToast } from '@/lib/toast';
 import ProductCard from '@/app/components/home/ProductCard';
@@ -221,7 +221,9 @@ export default function ProductDetailClient({ slug, initialId }) {
     return () => window.removeEventListener('resize', check);
   }, []);
   const [waLink, setWaLink] = useState(DEFAULT_WA_LINK);
-  const [msgLink, setMsgLink] = useState(null);
+  // Same bug/fix as FloatButtons.js (2026-08-01): start from the default instead
+  // of null, and don't skip the setter on a null contact — see that file's comment.
+  const [msgLink, setMsgLink] = useState(DEFAULT_MSG_LINK);
 
   const touchRef = useRef({ x: 0, y: 0 });
   const tabsWrapRef = useRef(null);
@@ -250,7 +252,7 @@ export default function ProductDetailClient({ slug, initialId }) {
     let cancelled = false;
     (async () => {
       const contact = await fetchContactSettings(supabase);
-      if (cancelled || !contact) return;
+      if (cancelled) return;
       setWaLink(computeWaLink(contact));
       setMsgLink(computeMsgLink(contact));
     })();
