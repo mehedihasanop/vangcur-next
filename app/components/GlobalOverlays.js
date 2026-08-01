@@ -8,8 +8,10 @@ import FloatWishBadge from './cart/FloatWishBadge';
 import OfferPopup from './modals/OfferPopup';
 import OfferPageOverlay from './modals/OfferPageOverlay';
 import RecoveryToast from './modals/RecoveryToast';
+import BackInStockToast from './modals/BackInStockToast';
 import MembershipModal from './modals/MembershipModal';
 import InvoiceModal from './modals/InvoiceModal';
+import StockNotifyModal from './modals/StockNotifyModal';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
 
 // Bug fix (2026-07-31): the `#toast` div + CartSidebar + WishlistDrawer used to be
@@ -69,9 +71,19 @@ export default function GlobalOverlays() {
           but opens via OPEN_OFFER_PAGE_EVENT (Footer.js's "📢 চলতি অফারসমূহ" button,
           already dispatching into the void until now) instead of a timer. */}
       <OfferPageOverlay />
+      {/* 41-back-in-stock-toast.html (2026-08-01) — self-contained like OfferPopup:
+          runs its own delayed scan (no open-event needed), same 4000ms delay legacy's
+          _scheduleNotificationToasts used. Mounted *before* RecoveryToast below on
+          purpose — legacy's scheduler always checked this one first, and mount order
+          here determines which component's setTimeout registers (and so fires) first;
+          see lib/notificationQueue.js for the full coordination mechanism that
+          preserves that ordering now that they're two separate components. */}
+      <BackInStockToast />
       {/* 38-abandoned-draft-recovery-toast.html (2026-07-31) — self-contained
           like OfferPopup: reads localStorage on a delay, no open-event needed.
-          Hides itself while on /checkout (see its own header note). */}
+          Hides itself while on /checkout (see its own header note). Now defers to
+          BackInStockToast above via lib/notificationQueue.js — see that file's and
+          this component's header notes. */}
       <RecoveryToast />
       {/* 39-membership-progress-modal.html (2026-07-31) — self-contained like
           OfferPopup above: owns its own open/close state, listens for
@@ -88,6 +100,14 @@ export default function GlobalOverlays() {
           Global here for the same reason as everything else in this file — reachable
           from every route that can dispatch that event. */}
       <InvoiceModal />
+      {/* 40-stock-notify-modal.html (2026-08-01) — self-contained like MembershipModal
+          above: owns its own open/close state, listens for STOCK_NOTIFY_EVENT itself
+          (dispatched with detail: { id, name } by ProductCard.js, SRPProductCard.js,
+          and ProductDetailClient.js's "স্টকে আসলে জানান" button — all three previously
+          firing into the void per lib/productData.js's own comment). Global here so
+          it's reachable from all three routes at once, same reasoning as everything
+          else in this file. */}
+      <StockNotifyModal />
     </>
   );
 }
