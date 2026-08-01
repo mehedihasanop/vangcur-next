@@ -58,6 +58,7 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState(1);
   const [cartItems, setCartItems] = useState([]);
+  const [isQuickOrder, setIsQuickOrder] = useState(false);
   const [cartWarnVisible, setCartWarnVisible] = useState(false);
 
   // Step 1 fields
@@ -104,10 +105,12 @@ export default function CheckoutPage() {
       if (Array.isArray(quickOrder) && quickOrder.length) {
         sessionStorage.removeItem('vc_quick_order_items');
         setCartItems(quickOrder);
+        setIsQuickOrder(true);
         setCartWarnVisible(false);
       } else {
         const cart = JSON.parse(localStorage.getItem('vc_cart') || '[]');
         setCartItems(Array.isArray(cart) ? cart : []);
+        setIsQuickOrder(false);
         setCartWarnVisible(!Array.isArray(cart) || cart.length === 0);
       }
     } catch (e) {
@@ -507,8 +510,13 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Order items mini summary — step 1 & 2 তে দেখাবে */}
-        {step !== 3 && cartItems.length > 0 && (
+        {/* Order items mini summary — step 1 & 2 তে দেখাবে, কিন্তু শুধু quick-order
+            (প্রোডাক্ট পেজ থেকে "এখনই অর্ডার করুন") flow-এ। মালিকের অনুরোধে (2026-08-01)
+            legacy থেকে ইচ্ছাকৃত পরিবর্তন: legacy-র checkout() কার্ট থেকে checkout করলেও
+            এই একই সামারি দেখাতো (orderItems=cart.map(...)), কিন্তু CartSidebar-এ
+            ঠিক তার আগেই একই নাম/দাম/পরিমাণ/টোটাল দেখানো হয়ে যায় বলে এটা পুনরাবৃত্তি/
+            অপ্রয়োজনীয় ছিল — তাই persistent cart checkout-এ এখন এই ব্লকটা দেখানো হয় না। */}
+        {step !== 3 && isQuickOrder && cartItems.length > 0 && (
           <div style={{ background: 'var(--white)', borderBottom: '1px solid var(--border)', padding: '10px 24px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>
               YOUR ORDER
