@@ -27,7 +27,7 @@ import { OPEN_TRACK_ORDER_EVENT, GENERATE_INVOICE_EVENT } from '@/lib/uiEvents';
 //   to a login/account event for that path, so OPEN_ACCOUNT_EVENT isn't imported here.
 // - dlInvoiceById(id,'track') -> dispatches GENERATE_INVOICE_EVENT the same way
 //   BgConfirmPopup.js/WaitingPage.js already do, with an added `ctx: 'track'` field
-//   (documented in lib/uiEvents.js) so the not-yet-built InvoiceModal.js can tell this
+//   (documented in lib/uiEvents.js) so InvoiceModal.js's back-button can tell this
 //   apart from a fresh post-checkout invoice once it exists.
 // - _pushPanel('track')/_popPanel() (mobile browser-back panel stack) intentionally
 //   skipped, same simplification already made in LoginModal.js/CartSidebar.js/
