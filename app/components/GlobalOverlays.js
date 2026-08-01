@@ -8,6 +8,8 @@ import FloatWishBadge from './cart/FloatWishBadge';
 import OfferPopup from './modals/OfferPopup';
 import OfferPageOverlay from './modals/OfferPageOverlay';
 import RecoveryToast from './modals/RecoveryToast';
+import MembershipModal from './modals/MembershipModal';
+import InvoiceModal from './modals/InvoiceModal';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
 
 // Bug fix (2026-07-31): the `#toast` div + CartSidebar + WishlistDrawer used to be
@@ -71,6 +73,21 @@ export default function GlobalOverlays() {
           like OfferPopup: reads localStorage on a delay, no open-event needed.
           Hides itself while on /checkout (see its own header note). */}
       <RecoveryToast />
+      {/* 39-membership-progress-modal.html (2026-07-31) — self-contained like
+          OfferPopup above: owns its own open/close state, listens for
+          OPEN_MEMBERSHIP_EVENT (dispatched by AccountPage.js's membership stat-box
+          with detail: { completedCount }). Global here so it works wherever
+          AccountPage.js happens to be mounted (today: only reachable via /checkout —
+          see VANGCUR_MASTER_PROMPT.md Priority 0, AccountPage.js isn't mounted on the
+          homepage yet, unrelated to this section). */}
+      <MembershipModal />
+      {/* InvoiceModal.js (2026-08-01) — the last piece GENERATE_INVOICE_EVENT
+          dispatchers (BgConfirmPopup.js, WaitingPage.js, OrderTracking.js,
+          AccountPage.js) were waiting on. Self-contained like MembershipModal above:
+          owns its own open/close state, listens for GENERATE_INVOICE_EVENT itself.
+          Global here for the same reason as everything else in this file — reachable
+          from every route that can dispatch that event. */}
+      <InvoiceModal />
     </>
   );
 }
