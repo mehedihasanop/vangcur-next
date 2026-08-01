@@ -207,7 +207,11 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
       </nav>
 
       {/* Mobile Search Bar */}
-      <div className={`mobile-search-bar${mobileSearchOpen ? ' open' : ''}`} id="mobileSearchBar">
+      {/* BUG FIX (2026-08-01): globals.css only reveals this with a `.show` class
+          (`.mobile-search-bar.show{display:block}`) — this used to add `.open`
+          instead, which globals.css has no rule for, so the bar (and its input)
+          stayed permanently display:none no matter what state the button toggled. */}
+      <div className={`mobile-search-bar${mobileSearchOpen ? ' show' : ''}`} id="mobileSearchBar">
         <div className="mobile-search-wrap" onClick={e => e.stopPropagation()}>
           <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
