@@ -116,7 +116,7 @@ export default function InvoiceModal() {
       document.body.removeChild(link);
       try { localStorage.removeItem('vc_pending_confirm'); } catch (err) { /* noop */ }
     } catch (err) {
-      alert('ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+      showToast('❌ ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       setDownloading(false);
     }
