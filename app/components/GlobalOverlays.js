@@ -12,6 +12,7 @@ import BackInStockToast from './modals/BackInStockToast';
 import MembershipModal from './modals/MembershipModal';
 import InvoiceModal from './modals/InvoiceModal';
 import StockNotifyModal from './modals/StockNotifyModal';
+import QuickOrderModal from './order/QuickOrderModal';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT } from '@/lib/uiEvents';
 
 // Bug fix (2026-07-31): the `#toast` div + CartSidebar + WishlistDrawer used to be
@@ -108,6 +109,12 @@ export default function GlobalOverlays() {
           it's reachable from all three routes at once, same reasoning as everything
           else in this file. */}
       <StockNotifyModal />
+      {/* QuickOrderModal.js (2026-08-01) — legacy's showQuickOrderModal() bottom
+          sheet. Self-contained like MembershipModal above: owns its own open state,
+          listens for QUICK_ORDER_MODAL_EVENT itself (dispatched by
+          QuickOrderBridge.js when "⚡ অর্ডার করুন" is clicked while the cart already
+          had items — see that file's header note). */}
+      <QuickOrderModal />
     </>
   );
 }
