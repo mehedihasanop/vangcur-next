@@ -19,15 +19,16 @@ import BackToTop from './components/layout/BackToTop';
 import FloatButtons from './components/layout/FloatButtons';
 import InfoOverlay from './components/modals/InfoOverlay';
 import OrderTracking from './components/order/OrderTracking';
+import LoginModal from './components/auth/LoginModal';
+import AccountPage from './components/auth/AccountPage';
 import { getCart, cartCount, CART_EVENT } from '@/lib/cartData';
 import { getWishlist, WISHLIST_EVENT } from '@/lib/productData';
+import { AUTH_EVENT, getCurrentUser } from '@/lib/authData';
 import { OPEN_CART_EVENT, OPEN_WISHLIST_EVENT, OPEN_TRACK_ORDER_EVENT } from '@/lib/uiEvents';
 
 // পরের components তৈরি হলে এখানে import যোগ হবে:
 // import SearchPage from './components/search/SearchPage';
 // import ProductDetail from './components/product/ProductDetail';
-// import LoginModal from './components/auth/LoginModal';
-// import AccountPage from './components/auth/AccountPage';
 // import OrderForm from './components/order/OrderForm';
 // import PreConfirmLogin from './components/order/PreConfirmLogin';
 // import WarrantyModal from './components/modals/WarrantyModal';
@@ -45,6 +46,19 @@ export default function ClientHome() {
   // drawer" is now a cross-tree event instead of local state.
   const [cartQty, setCartQty] = useState(0);
   const [wishQty, setWishQty] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+
+  // Bug fix (2026-07-31, resolved): currentUser লাইভ ট্র্যাক করা — lib/authData.js-এর
+  // AUTH_EVENT প্যাটার্ন, checkout/page.js যেভাবে ইমপারেটিভভাবে getCurrentUser() কল করে
+  // তার বদলে এখানে reactive state দরকার যাতে Navbar লগইন/লগআউট হলেই re-render হয়।
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+    const onAuthChange = (e) => setCurrentUser(e.detail?.user ?? getCurrentUser());
+    window.addEventListener(AUTH_EVENT, onAuthChange);
+    return () => window.removeEventListener(AUTH_EVENT, onAuthChange);
+  }, []);
 
   useEffect(() => {
     setCartQty(cartCount(getCart()));
@@ -68,19 +82,10 @@ export default function ClientHome() {
         wishCount={wishQty}
         onWishClick={() => window.dispatchEvent(new CustomEvent(OPEN_WISHLIST_EVENT))}
         onTrackClick={() => window.dispatchEvent(new CustomEvent(OPEN_TRACK_ORDER_EVENT))}
+        currentUser={currentUser}
+        onLoginClick={() => setIsLoginOpen(true)}
+        onAccountClick={() => setIsAccountOpen(true)}
       />
-      {/* Bug fix (2026-07-31): onTrackClick was never passed, so Navbar's own
-          ট্র্যাক-অর্ডার icon button did nothing (Footer.js's separate "ট্র্যাক অর্ডার"
-          link already dispatched OPEN_TRACK_ORDER_EVENT correctly and still does —
-          only the Navbar icon was dead). Now both trigger the same event.
-          NOT fixed here — bigger than a one-line wiring fix, flagged in
-          VANGCUR_MASTER_PROMPT.md as the top follow-up instead: onLoginClick,
-          onAccountClick, and currentUser are still never passed to Navbar on the
-          homepage, because LoginModal.js/AccountPage.js aren't mounted in
-          ClientHome.js at all yet (only reachable today from /checkout). So on the
-          homepage right now: "লগইন করুন" does nothing, and the navbar can never show
-          a signed-in user's name/avatar even if they're logged in (e.g. via
-          /checkout) — it always renders the logged-out button. */}
       <HeroSlider />
       <TrustStrip />
       <CatBar />
@@ -103,6 +108,13 @@ export default function ClientHome() {
       <FloatButtons />
       <InfoOverlay />
       <OrderTracking />
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <AccountPage
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        currentUser={currentUser}
+        onAddAccount={() => setIsLoginOpen(true)}
+      />
       {/* Overlays এখানে আসবে */}
     </>
   );
