@@ -9,6 +9,7 @@ import {
   DEFAULT_PRODS, fetchCustomProducts, mergeCustomProducts, productHref,
 } from '@/lib/productData';
 import { searchProducts } from '@/lib/searchData';
+import { DEFAULT_CATEGORIES, fetchCategories, makeCatSlug } from '@/lib/categoryData';
 
 // Bug fix (2026-07-31): the live search-as-you-type dropdown used to call
 // fetch('/api/search?q=...') — no such route exists anywhere in this repo (verified:
@@ -39,6 +40,16 @@ import { searchProducts } from '@/lib/searchData';
 // the "সব দেখুন" header link and footer button legacy's showSearchDropdown() has
 // (32-javascript-all.js reference upload, lines ~6324-6520) — item highlighting
 // included, category suggestions intentionally left out to keep this fix scoped.
+//
+// Round 3 (2026-08-01, owner screenshot comparison against the legacy Netlify
+// deploy): category suggestions ARE added now (matches legacy's catMatchesAll
+// section — icons/names from lib/categoryData.js's DEFAULT_CATEGORIES, same
+// admin-overridable vc_categories source Categories.js/CatBar.js already use), each
+// result's sd-meta now shows the category's display name instead of its raw id
+// (catName() below), and the "পণ্য" section label above the product list was added
+// back. Also fixed: tapping the mobile search icon didn't focus the input (legacy's
+// toggleMobileSearch() calls .focus() the instant the bar becomes visible — see the
+// mobileSearchInputRef effect below).
 
 function SearchThumb({ imgVal }) {
   const isUrl = typeof imgVal === 'string' && (imgVal.startsWith('http://') || imgVal.startsWith('https://'));
@@ -49,6 +60,39 @@ function SearchThumb({ imgVal }) {
         : <span style={{ fontSize: 24 }}>{imgVal || '📦'}</span>}
     </div>
   );
+}
+
+function CategoryIcon({ icon }) {
+  const isSvg = typeof icon === 'string' && icon.startsWith('<svg');
+  if (isSvg) {
+    return <div className="sd-emoji" style={{ fontSize: 0, color: 'var(--dark)' }} dangerouslySetInnerHTML={{ __html: icon.replace(/width="\d+"/, 'width="22"').replace(/height="\d+"/, 'height="22"') }} />;
+  }
+  return <div className="sd-emoji" style={{ fontSize: 20 }}>{icon || '📂'}</div>;
+}
+
+// Legacy: showSearchDropdown()'s catMatchesAll scoring (32-javascript-all.js reference
+// upload ~6456-6472) — startsWith beats word-startsWith beats plain includes.
+function matchCategories(cats, q) {
+  const lower = q.toLowerCase().trim();
+  const words = lower.split(/\s+/).filter(Boolean);
+  const compactQ = lower.replace(/\s+/g, '');
+  return cats
+    .filter((c) => c.id !== 'all')
+    .map((c) => {
+      const name = (c.name || '').toLowerCase();
+      const id = (c.id || '').toLowerCase();
+      const hay = `${name} ${id}`;
+      const compactHay = hay.replace(/\s+/g, '');
+      let score = 0;
+      if (name.startsWith(lower) || id.startsWith(lower)) score = 3;
+      else if (words.some((w) => name.split(' ').some((part) => part.startsWith(w)))) score = 2;
+      else if (hay.includes(lower) || compactHay.includes(compactQ)) score = 1;
+      return { c, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map((x) => x.c);
 }
 
 // Legacy: highlight(text, q) (32-javascript-all.js's showSearchDropdown, reference
@@ -71,10 +115,13 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [catResults, setCatResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
   const cartBtnRef = useRef(null);
+  const mobileSearchInputRef = useRef(null);
   const prodsRef = useRef(DEFAULT_PRODS);
+  const catsRef = useRef(DEFAULT_CATEGORIES);
   const router = useRouter();
 
   // Fetch product list once, for the search dropdown only (see note above)
@@ -88,6 +135,23 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Fetch category list once, for the search dropdown's category-name lookup +
+  // category suggestions (same admin-overridable vc_categories source Categories.js/
+  // CatBar.js already use).
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories(supabase).then((list) => { if (!cancelled) catsRef.current = list; });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Legacy: toggleMobileSearch() (32-javascript-all.js ~11040-11046) focuses the
+  // input the instant the bar becomes visible, so the keyboard opens immediately on
+  // tapping the search icon — this was missing here (tapping the icon only revealed
+  // the bar; a second tap into the input was needed to bring up the keyboard).
+  useEffect(() => {
+    if (mobileSearchOpen) mobileSearchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
 
   // Legacy: _triggerCartJiggle()'s `#cartDot` closest-button half (32-javascript-all.js
   // ~1108-1111) — the other half (#floatCartBtn) now lives in
@@ -111,6 +175,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     setSearchQuery(value);
     if (!value.trim()) {
       setSearchResults([]);
+      setCatResults([]);
       setShowDropdown(false);
       return;
     }
@@ -118,9 +183,24 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     searchTimeoutRef.current = setTimeout(() => {
       const results = searchProducts(prodsRef.current, value).slice(0, 6);
       setSearchResults(results);
+      setCatResults(matchCategories(catsRef.current, value));
       setShowDropdown(true);
     }, 280);
   }, []);
+
+  // Legacy: catNames[p.cat]||p.cat fallback (32-javascript-all.js ~6388-6401) — shows
+  // the category's display name in each result's sd-meta line instead of its raw id.
+  const catName = (catId) => (catsRef.current.find((c) => c.id === catId) || {}).name || catId;
+
+  // Legacy: onclick="goToCat('${c.id}')" on each category suggestion row.
+  const goToCat = (catId) => {
+    setShowDropdown(false);
+    setMobileSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setCatResults([]);
+    router.push(catId === 'all' ? '/' : `/category/${makeCatSlug(catId)}`);
+  };
 
   // Legacy: viewAllSearch(q) -> openSRP(q) (32-javascript-all.js ~2978-2990) —
   // /srp is a real page here (owner's decision), so this is a real navigation
@@ -131,6 +211,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
     setMobileSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
+    setCatResults([]);
     router.push(`/srp?q=${encodeURIComponent(q)}`);
   };
 
@@ -182,6 +263,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                         <span>{searchResults.length}টি পণ্য পাওয়া গেছে</span>
                         <a className="sd-view-all" onClick={() => goToSrp()}>সব দেখুন →</a>
                       </div>
+                      <div style={{ padding: '6px 14px 2px', fontSize: 10.5, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.7px' }}>পণ্য</div>
                       {searchResults.map(p => (
                         <Link
                           key={p.id}
@@ -192,11 +274,26 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                           <SearchThumb imgVal={(p.imgs || [])[0]} />
                           <div className="sd-info">
                             <div className="sd-name">{highlightMatch(p.name, searchQuery)}</div>
-                            <div className="sd-meta">{p.cat}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
+                            <div className="sd-meta">{catName(p.cat)}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
                           </div>
                           <div className="sd-price">৳{Number(p.price).toLocaleString()}</div>
                         </Link>
                       ))}
+                      {catResults.length > 0 && (
+                        <>
+                          <div style={{ height: 1, background: 'var(--border)', margin: '4px 14px' }} />
+                          <div style={{ padding: '8px 14px 4px', fontSize: 10.5, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.7px' }}>ক্যাটাগরি</div>
+                          {catResults.map((c) => (
+                            <div key={c.id} className="sd-item" style={{ padding: '9px 14px', cursor: 'pointer' }} onClick={() => goToCat(c.id)}>
+                              <CategoryIcon icon={c.icon} />
+                              <div className="sd-info">
+                                <div className="sd-name" style={{ fontSize: 13 }}>{c.name}</div>
+                                <div className="sd-meta">ক্যাটাগরি দেখুন →</div>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
                       <div className="sd-footer">
                         <button className="sd-view-all-btn" onClick={() => goToSrp()}>
                           🔍 &quot;{searchQuery}&quot; এর সব ফলাফল দেখুন
@@ -273,12 +370,13 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
             onChange={e => handleSearchInput(e.target.value)}
             onKeyDown={handleSearchKey}
             id="mobileSearchInput"
+            ref={mobileSearchInputRef}
             autoComplete="off"
           />
           {searchQuery && (
             <button
               className="mobile-search-clear"
-              onClick={() => { setSearchQuery(''); setSearchResults([]); setShowDropdown(false); }}
+              onClick={() => { setSearchQuery(''); setSearchResults([]); setCatResults([]); setShowDropdown(false); }}
               title="মুছুন"
             >✕</button>
           )}
@@ -292,6 +390,7 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                     <span>{searchResults.length}টি পণ্য পাওয়া গেছে</span>
                     <a className="sd-view-all" onClick={() => goToSrp()}>সব দেখুন →</a>
                   </div>
+                  <div style={{ padding: '6px 14px 2px', fontSize: 10.5, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.7px' }}>পণ্য</div>
                   {searchResults.map(p => (
                     <Link
                       key={p.id}
@@ -302,11 +401,26 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
                       <SearchThumb imgVal={(p.imgs || [])[0]} />
                       <div className="sd-info">
                         <div className="sd-name">{highlightMatch(p.name, searchQuery)}</div>
-                        <div className="sd-meta">{p.cat}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
+                        <div className="sd-meta">{catName(p.cat)}{p.stock <= 0 && <> · <span style={{ color: 'var(--red)' }}>স্টক শেষ</span></>}</div>
                       </div>
                       <div className="sd-price">৳{Number(p.price).toLocaleString()}</div>
                     </Link>
                   ))}
+                  {catResults.length > 0 && (
+                    <>
+                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 14px' }} />
+                      <div style={{ padding: '8px 14px 4px', fontSize: 10.5, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '.7px' }}>ক্যাটাগরি</div>
+                      {catResults.map((c) => (
+                        <div key={c.id} className="sd-item" style={{ padding: '9px 14px', cursor: 'pointer' }} onClick={() => goToCat(c.id)}>
+                          <CategoryIcon icon={c.icon} />
+                          <div className="sd-info">
+                            <div className="sd-name" style={{ fontSize: 13 }}>{c.name}</div>
+                            <div className="sd-meta">ক্যাটাগরি দেখুন →</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   <div className="sd-footer">
                     <button className="sd-view-all-btn" onClick={() => goToSrp()}>
                       🔍 &quot;{searchQuery}&quot; এর সব ফলাফল দেখুন
@@ -320,4 +434,4 @@ export default function Navbar({ cartCount = 0, wishCount = 0, onCartClick, onWi
       </div>
     </>
   );
-                                        }
+}
