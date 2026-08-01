@@ -8,9 +8,8 @@ import { SHOW_POST_ORDER_INFO_EVENT } from '@/lib/uiEvents';
 // - closePost() (lines ~1635-1645) — clears vc_pending_confirm, sets
 //   vc_show_thank_you='1' so the navbar's thank-you animation fires after reload,
 //   then hard-reloads to the current path (window.location.replace).
-// - Shown from the not-yet-built InvoiceModal.js's back-button handler default
-//   branch (lines ~1670-1678) — reached here via SHOW_POST_ORDER_INFO_EVENT (see
-//   lib/uiEvents.js) since InvoiceModal.js doesn't exist yet.
+// - Shown from InvoiceModal.js's back-button handler default branch (lines
+//   ~9626-9630) — reached here via SHOW_POST_ORDER_INFO_EVENT (see lib/uiEvents.js).
 // - Global Escape-closes-this-overlay is one branch of the same shared "close every
 //   open modal" fan-out documented in BgConfirmPopup.js/WaitingPage.js; not
 //   reproduced site-wide here for the same reason — only a scoped listener for this
